@@ -8,14 +8,7 @@ PROJECT_PATH = os.path.dirname(PROJECT_ROOT)
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    # ('Gordon Morehouse', 'gordon@morehouse.me'),
-)
-
-MANAGERS = ADMINS
-
-
-# DATABASES in local_settings.py
+# MANAGERS, ADMINS, DATABASES in local_settings.py
 
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
@@ -90,6 +83,10 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.Loader',
 )
 
+TEMPLATE_CONTEXT_PROESSORS = (
+    'django.core.context_processors.request',   # django-socialregistration
+)
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -118,10 +115,12 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Uncomment the next line to enable the admin:
     'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
+    ### 3rd party
+    'django.contrib.sites',
+    'socialregistration',
+    ### our stuff
     'dashboard',
 )
 
