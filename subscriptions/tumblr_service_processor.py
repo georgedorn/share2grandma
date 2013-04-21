@@ -1,0 +1,5 @@
+
+
+class TumblrServiceProcessor(GenericServiceProcessor):
+    pass
+
