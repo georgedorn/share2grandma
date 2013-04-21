@@ -1,54 +1,54 @@
-from .generic_service_processor import GenericServiceProcessor
-from .models import TumblrService
+from .generic_service_processor import GenericSubscriptionProcessor
 from pytumblr import TumblrRestClient
 
 from django.conf import settings
 
 
-class TumblrServiceProcessor(GenericServiceProcessor):
+class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
     def __init__(self, service=None):
+        self.service = service
         self.client = TumblrRestClient(consumer_key=settings.TUMBLR_API_KEY)
-        self.tumblr_info = self.client.blog_info(service.tumblr_base_hostname)['blog']
+        self.tumblr_info = self.client.blog_info(service.short_name)['blog']
         self.tumblr_post_list = []
 
 
-    def connect(self, service=None):
+    def get_blog_info(self):
         """
-        Set our fields in the DB and save
+        Get info about the blog from Tumblr
         """
+        info = {}
 
-        #* Get avatar
-        service.avatar = self.client.avatar(service.tumblr_base_hostname)['avatar_url']
+        # Get avatar
+        info['avatar'] = self.client.avatar(self.service.short_name)['avatar_url']
 
-        #* Get pretty name
-        service.short_name = self.tumblr_info['name']
-        service.pretty_name = self.tumblr_info['title']
+        # Get blog pretty_name
+        info['pretty_name'] = self.tumblr_info['title']
 
-        #* Get most recent post's timestamp
-        service.last_post_ts = self.tumblr_info['updated']
+        # Get most recent post's timestamp
+        info['last_post_ts'] = self.tumblr_info['updated']
 
-        service.save()
+        return info
 
 
-    def grab(self, service=None):
+    def grab(self):
         """
         Fill self.tumblr_post_list with posts
         """
 
         # First check if updated, if not, don't start pulling posts
-        if(self.tumblr_info['updated'] <= service.last_poll_time):
+        if(self.tumblr_info['updated'] <= self.service.last_poll_time):
             return
 
-        # Get posts from blog and stop when we see one <= service.last_poll_time
+        # Get posts from blog and stop when we see one <= self.service.last_poll_time
         done_queueing = False
 
         while not done_queueing:
-            twenty_posts = self.client.posts(service.tumblr_base_hostname,
+            twenty_posts = self.client.posts(self.service.short_name,
                                              limit=20,
                                              offset=len(self.tumblr_post_list))['posts']
 
             for post in twenty_posts:
-                if post['timestamp'] <= service.last_post_ts:
+                if post['timestamp'] <= self.service.last_post_ts:
                     done_queueing = True
                     break
                 else:

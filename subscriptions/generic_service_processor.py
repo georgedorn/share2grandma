@@ -1,10 +1,10 @@
-class GenericServiceProcessor(object):
+class GenericSubscriptionProcessor(object):
     """
     This is the interface for services.  They must all have the
     methods below.
     """
 
-    def connect(self):
+    def get_blog_info(self):
         """
         Run when the user first sets up this service.
         """
