@@ -1,14 +1,24 @@
-# This is the interface for services.  They must all have the
-# methods below.
-
-
 class GenericServiceProcessor(object):
-    def grab():
-        """Pulls data from the service and stores it in this object"""
+    """
+    This is the interface for services.  They must all have the
+    methods below.
+    """
+
+    def connect(self):
+        """
+        Run when the user first sets up this service.
+        """
         raise NotImplementedError
 
 
-    def mangle():
+    def grab(self):
+        """
+        Pulls data from the service and stores it in this object
+        """
+        raise NotImplementedError
+
+
+    def mangle(self):
         """
         Transforms pulled data to a format we like, so we can send it.
         returns string?
