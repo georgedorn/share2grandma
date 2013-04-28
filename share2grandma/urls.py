@@ -1,6 +1,5 @@
 from django.conf.urls import patterns, include, url
 
-# Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
@@ -20,5 +19,5 @@ urlpatterns = patterns('',
             namespace = 'socialregistration')),
 
     ### ours
-
+    url(r'^dashboard/', include('dashboard.urls')),
 )

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.forms import ModelForm
 
 from .tumblr_service_processor import TumblrSubscriptionProcessor
 
@@ -31,6 +32,11 @@ class TumblrSubscription(GenericSubscription):
 
         if save is True:
             self.save()
+
+
+class TumblrSubscriptionForm(ModelForm):
+    class Meta:
+        model = TumblrSubscription
 
 
 admin.site.register(TumblrSubscription)
