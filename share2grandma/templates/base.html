@@ -1,0 +1,16 @@
+<html>
+<head>
+<title>{% block pagetitle %}DUMMY PAGETITLE - FIX ME{%endblock%}</title>
+{% block scripts %}{% endblock %}
+</head>
+<body>
+<div id='header'>
+{% if user.is_authenticated %}Hello {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">Logout</a>
+{% else %}Log in with <a href="{% url "socialauth_begin" "tumblr" %}">Tumblr</a>
+{% endif %}
+</div>
+
+{% block content %}{% endblock %}
+</body>
+</html>
+

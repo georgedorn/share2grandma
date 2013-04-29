@@ -13,10 +13,12 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^logout/$', 'django.contrib.auth.views.logout',
+        {'next_page': '/'}),
+    
 
     ### 3rd party
-    url(r'^social/', include('socialregistration.urls',
-            namespace = 'socialregistration')),
+    url(r'^social/', include('social_auth.urls')),
 
     ### ours
     url(r'^dashboard/', include('dashboard.urls')),
