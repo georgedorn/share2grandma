@@ -3,24 +3,18 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.forms import ModelForm
 
-from .tumblr_service_processor import TumblrSubscriptionProcessor
+from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 
 class GenericSubscription(models.Model):
-    user = models.ForeignKey(User, related_name='services')
+    user = models.ForeignKey(User, related_name='subscriptions')
     enabled = models.BooleanField(default=True)
-    short_name = models.TextField(null=False, max_length=16)
-    pretty_name = models.TextField(null=True, blank=True, max_length=80)
-    avatar = models.TextField(null=True, blank=True)      # set to generic for services w/no avatar
+    short_name = models.CharField(null=False, max_length=16)
+    pretty_name = models.CharField(blank=True, max_length=80)
+    avatar = models.TextField(null=True, blank=True)      # set to generic for subscriptions w/no avatar
 
 
 class TumblrSubscription(GenericSubscription):
     last_post_ts = models.BigIntegerField(null=True, blank=True)
-
-
-    def __init__(self, *args, **kwargs):
-        # call update_from_tumblr here... sometimes?
-        super(TumblrSubscription, self).__init__(*args, **kwargs)
-
 
     def update_from_tumblr(self, save=False):
         processor = TumblrSubscriptionProcessor(self)
@@ -33,10 +27,26 @@ class TumblrSubscription(GenericSubscription):
         if save is True:
             self.save()
 
+    def save(self, *args, **kwargs):
+        # check if it looks like this is a brand new object, if so, pull the
+        # data from tumblr
+        if not self.avatar and not self.pretty_name:
+            self.update_from_tumblr()
+
+        super(TumblrSubscription, self).save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return "/dashboard/subscription/%d" % self.pk   # mchllweeks to write this view
+
+    def __unicode__(self):
+        # so it's intelligible in the django admin
+        return "%s (Tumblr) sub for %s" % (self.short_name, self.user)
+
 
 class TumblrSubscriptionForm(ModelForm):
     class Meta:
         model = TumblrSubscription
+        exclude = ('pretty_name', 'avatar', 'last_post_ts')     # user can't twiddle these
 
 
 admin.site.register(TumblrSubscription)

@@ -1,14 +1,14 @@
-from .generic_service_processor import GenericSubscriptionProcessor
+from .generic_subscription_processor import GenericSubscriptionProcessor
 from pytumblr import TumblrRestClient
 
 from django.conf import settings
 
 
 class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
-    def __init__(self, service=None):
-        self.service = service
+    def __init__(self, subscription=None):
+        self.subscription = subscription
         self.client = TumblrRestClient(consumer_key=settings.TUMBLR_API_KEY)
-        self.tumblr_info = self.client.blog_info(service.short_name)['blog']
+        self.tumblr_info = self.client.blog_info(subscription.short_name)['blog']
         self.tumblr_post_list = []
 
 
@@ -19,7 +19,7 @@ class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
         info = {}
 
         # Get avatar
-        info['avatar'] = self.client.avatar(self.service.short_name)['avatar_url']
+        info['avatar'] = self.client.avatar(self.subscription.short_name)['avatar_url']
 
         # Get blog pretty_name
         info['pretty_name'] = self.tumblr_info['title']
@@ -36,19 +36,19 @@ class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
         """
 
         # First check if updated, if not, don't start pulling posts
-        if(self.tumblr_info['updated'] <= self.service.last_poll_time):
+        if(self.tumblr_info['updated'] <= self.subscription.last_poll_time):
             return
 
-        # Get posts from blog and stop when we see one <= self.service.last_poll_time
+        # Get posts from blog and stop when we see one <= self.subscription.last_poll_time
         done_queueing = False
 
         while not done_queueing:
-            twenty_posts = self.client.posts(self.service.short_name,
+            twenty_posts = self.client.posts(self.subscription.short_name,
                                              limit=20,
                                              offset=len(self.tumblr_post_list))['posts']
 
             for post in twenty_posts:
-                if post['timestamp'] <= self.service.last_post_ts:
+                if post['timestamp'] <= self.subscription.last_post_ts:
                     done_queueing = True
                     break
                 else:
