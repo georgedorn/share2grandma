@@ -14,15 +14,9 @@ class TumblrSubscriptionCreateView(CreateView):
     model = TumblrSubscription
     form_class = TumblrSubscriptionForm
     object = None   # cause we're creating a new one
-#    template_name = "dashboard/tumblrsubscription_form.html"  # why do i have to specify? i thought this was default
 
-    def get(self, request, *args, **kwargs):
-        form = self.form_class()
-#        return self.render_to_response(request)
-        return render(request, self.get_template_names(), {'form': form})
-
-    def post(self, request):
-        return HttpResponse("Post")
+    # get() is provided by CreateView
+    # post() is provided by CreateView and, if successful, redirects to the TumblrSubscription object by default
 
 
 class SubscriptionListView(ListView):

@@ -1,19 +1,19 @@
 class GenericSubscriptionProcessor(object):
     """
-    This is the interface for services.  They must all have the
+    This is the interface for subscriptions.  They must all have the
     methods below.
     """
 
     def get_blog_info(self):
         """
-        Run when the user first sets up this service.
+        Run when the user first sets up this subscription.
         """
         raise NotImplementedError
 
 
     def grab(self):
         """
-        Pulls data from the service and stores it in this object
+        Pulls data from the subscription and stores it in this object
         """
         raise NotImplementedError
 
