@@ -3,7 +3,8 @@
 {% block content %}
 enter a tumblr subscription here
 
-<form action="/subscriptions/subscribe/tumblr/" method="post">{% csrf_token %}
+    <!-- @todo hardcoded url -->
+<form action="/subscriptions/create/tumblr/" method="post">{% csrf_token %}
 {{ form.as_p }}
 <input type="submit" value="Submit" />
 </form>

@@ -36,7 +36,8 @@ class TumblrSubscription(GenericSubscription):
         super(TumblrSubscription, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return "/subscriptions/subscription/%d" % self.pk   # mchllweeks to write this view
+        # @todo harcoded url
+        return "/subscriptions/detail/tumblr/%d" % self.pk   # mchllweeks to write this view
 
     def __unicode__(self):
         # so it's intelligible in the django admin
