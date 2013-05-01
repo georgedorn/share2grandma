@@ -1,0 +1,9 @@
+from django.conf.urls import patterns, include, url
+
+from .views import TumblrSubscriptionCreateView, SubscriptionDetailView, GenericSubscriptionListView
+
+urlpatterns = patterns('',
+    (r'^subscribe/tumblr', TumblrSubscriptionCreateView.as_view()),
+    (r'^list', GenericSubscriptionListView.as_view()),
+    (r'^detail/tumblr/(?P<pk>\d+)/$', SubscriptionDetailView.as_view()),
+)
