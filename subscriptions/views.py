@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.shortcuts import render
-from django.views.generic import ListView, TemplateView, CreateView, DetailView
+from django.views.generic import ListView, TemplateView, CreateView, DetailView, DeleteView
 
 from .models import TumblrSubscription, TumblrSubscriptionForm, GenericSubscription
 
@@ -14,8 +14,10 @@ class SubscriptionDetailView(DetailView):
     model = TumblrSubscription
 
 
-
 class GenericSubscriptionListView(ListView):
     queryset = GenericSubscription.objects.all()
 #    queryset = Book.objects.filter(publisher__name="Acme Publishing")
 #    template_name = "books/acme_list.html"
+
+class SubscriptionDeleteView(DeleteView):
+    model = TumblrSubscription
