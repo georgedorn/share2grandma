@@ -14,6 +14,7 @@ class SubscriptionDetailView(DetailView):
     model = TumblrSubscription
 
 
+
 class GenericSubscriptionListView(ListView):
     queryset = GenericSubscription.objects.all()
 #    queryset = Book.objects.filter(publisher__name="Acme Publishing")

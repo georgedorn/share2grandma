@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Details</h1>
+    <dl>
+        <dt class="top"><br>User</dt>
+        <dd>{{ object.user }}</dd>
+        <dt>Enabled?</dt>
+        <dd>{{ object.enabled }}</dd>
+        <dt>Short name</dt>
+        <dd>{{ object.short_name }}</dd>
+        <dt>Pretty name</dt>
+        <dd>{{ object.pretty_name }}</dd>
+        <dt>Avatar</dt>
+        <dd><img src="{{ object.avatar }}"></dd>
+    </dl>
+{% endblock %}
