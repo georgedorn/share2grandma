@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.generic import ListView, TemplateView, CreateView
 
-from subscriptions.models import TumblrSubscription, TumblrSubscriptionForm
+from subscriptions.models import GenericSubscription, TumblrSubscription, TumblrSubscriptionForm
 
 
 class FAQView(TemplateView):
@@ -19,7 +19,8 @@ class TumblrSubscriptionCreateView(CreateView):
     # post() is provided by CreateView and, if successful, redirects to the TumblrSubscription object by default
 
 
-class SubscriptionListView(ListView):
-    context_object_name = "subscription_list"
+class GenericSubscriptionListView(ListView):
+# ??    context_object_name = "subscription_list"
+    queryset = GenericSubscription.objects.all()
 #    queryset = Book.objects.filter(publisher__name="Acme Publishing")
 #    template_name = "books/acme_list.html"

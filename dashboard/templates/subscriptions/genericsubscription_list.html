@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Subscriptions</h1>
+    <dl>
+        {% for subscription in object_list %}
+            <dt class="top"><br>User</dt>
+            <dd>{{ subscription.user }}</dd>
+            <dt>Enabled?</dt>
+            <dd>{{ subscription.enabled }}</dd>
+            <dt>Short name</dt>
+            <dd>{{ subscription.short_name }}</dd>
+            <dt>Pretty name</dt>
+            <dd>{{ subscription.pretty_name }}</dd>
+            <dt>Avatar</dt>
+            <dd><img src="{{ subscription.avatar }}"></dd>
+        {% endfor %}
+    </dl>
+{% endblock %}
