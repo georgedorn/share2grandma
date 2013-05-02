@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <p>Are you sure you want to delete {{ object.short_name }}?</p>
+    <!-- @todo hardcoded url -->
+    <form action="/subscriptions/delete/tumblr/{{ object.pk }}/" method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Delete" />
+    </form>
+    <a href="/subscriptions/detail/tumblr/{{ object.pk }}/">Cancel</a>
+{% endblock %}
