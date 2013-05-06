@@ -151,7 +151,9 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-LOGIN_URL          = '/login-form/'
+#Until this bug is in the next django release, don't change the LOGIN_URL.
+#https://code.djangoproject.com/ticket/20114
+LOGIN_URL          = '/login/'
 LOGIN_REDIRECT_URL = '/logged-in/'
 LOGIN_ERROR_URL    = '/login-error/'
 
