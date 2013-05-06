@@ -159,6 +159,11 @@ SOCIAL_AUTH_FORCE_POST_DISCONNECT = True
 TUMBLR_CONSUMER_KEY = ''
 TUMBLR_CONSUMER_SECRET = ''
 
+#Don't run these social auth tests:
+SOCIAL_AUTH_TEST_TWITTER = False
+SOCIAL_AUTH_TEST_FACEBOOK = False
+SOCIAL_AUTH_TEST_GOOGLE = False
+SOCIAL_AUTH_TEST_ODNOKLASSNIKI = False
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
