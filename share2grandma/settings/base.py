@@ -190,11 +190,4 @@ LOGGING = {
 }
 
 
-TUMBLR_API_KEY = os.environ['TUMBLR_API_KEY']
-
-
-try:
-    from local_settings import *
-except ImportError:
-    pass
-
+TUMBLR_API_KEY = os.environ.get('TUMBLR_API_KEY')
