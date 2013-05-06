@@ -1,6 +1,10 @@
 language: python
 python:
  - "2.7"
+env:
+ - DJANGO_SETTINGS_MODULE=share2grandma.settings.travis
+
+
 
 #install deps
 install: "pip install -r requirements.txt --use-mirrors"
