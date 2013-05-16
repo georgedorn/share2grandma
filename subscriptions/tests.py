@@ -64,7 +64,7 @@ class TumblrSubscriptionDeleteTest(TestCase):
     http://demo.tumblr.com/ is the 'fixture' in this case
     """
 
-    def setup(self):
+    def setUp(self):
         self.user = User.objects.create_user('derplord')
         self.user = User.objects.get_by_natural_key('derplord')
 
@@ -72,8 +72,13 @@ class TumblrSubscriptionDeleteTest(TestCase):
         subscription = TumblrSubscription(short_name='demo', user=self.user)
         subscription.save()
 
-        foo = TumblrSubscription.objects.get(short_name='demo')
+        sub_all = TumblrSubscription.objects.all()
+        result = len(sub_all)
+        self.assertEqual(result, 1)
 
-        foo.delete()
+        new_sub = TumblrSubscription.objects.get(short_name='demo')
+        new_sub.delete()
 
-        self.assertFalse('Demo', subscription.pretty_name)
+        del_sub = TumblrSubscription.objects.all()
+        result = len(del_sub)
+        self.assertEqual(result, 0)
