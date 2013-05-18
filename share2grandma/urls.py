@@ -19,6 +19,7 @@ urlpatterns = patterns('',
 
     ### 3rd party
     url(r'^social/', include('social_auth.urls')),
+    url(r'^registration/', include('registration.backends.default.urls')),
 
     ### ours
     url(r'^dashboard/', include('dashboard.urls')),

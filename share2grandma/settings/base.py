@@ -121,6 +121,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'social_auth',
     'south',
+    'registration',
     ### our stuff
     'dashboard',
     'subscriptions',

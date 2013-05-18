@@ -14,6 +14,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 DATABASES = {
              "default": {
@@ -27,5 +28,6 @@ DATABASES = {
              }
 
 TUMBLR_CONSUMER_KEY = 'PsbqraXHdjAOpHf31vJ7fa4UIyUTeRwVlX3AxUOmtwqHQWZgbh'
+TUMBLR_API_KEY = TUMBLR_CONSUMER_KEY
 TUMBLR_CONSUMER_SECRET = 'C1P3TznBoZsNtrfAxnQSoWLDSq0J6Msnk468OJfTMF90XOipbO'
 
