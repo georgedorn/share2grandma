@@ -14,7 +14,7 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
-EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DATABASES = {
              "default": {

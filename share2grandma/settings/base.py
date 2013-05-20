@@ -155,9 +155,10 @@ AUTHENTICATION_BACKENDS = (
 #Until this bug is in the next django release, don't change the LOGIN_URL.
 #https://code.djangoproject.com/ticket/20114
 LOGIN_URL          = '/login/'
-LOGIN_REDIRECT_URL = '/logged-in/'
+LOGIN_REDIRECT_URL = '/dashboard/'
 LOGIN_ERROR_URL    = '/login-error/'
 
+ACCOUNT_ACTIVATION_DAYS = 7 #how long you have to verify your account before it's nuked
 SOCIAL_AUTH_FORCE_POST_DISCONNECT = True
 TUMBLR_CONSUMER_KEY = ''
 TUMBLR_CONSUMER_SECRET = ''

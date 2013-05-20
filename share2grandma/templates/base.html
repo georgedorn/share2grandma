@@ -9,12 +9,13 @@
 {% block scripts %}{% endblock %}
 </head>
 <body>
+{% block header %}
 <div id='header'>
 {% if user.is_authenticated %}Hello {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">Logout</a>
-{% else %}Log in with <a href="{% url "socialauth_begin" "tumblr" %}">Tumblr</a>
+{% else %}<a href="{% url "auth_login" %}">Login</a>
 {% endif %}
 </div>
-
+{% endblock %}
 {% block content %}{% endblock %}
 </body>
 </html>
