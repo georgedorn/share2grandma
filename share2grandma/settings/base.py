@@ -126,6 +126,7 @@ INSTALLED_APPS = (
     'dashboard',
     'subscriptions',
     'dispatch',
+    'project_tests', #just tests, no models
 )
 
 AUTHENTICATION_BACKENDS = (
