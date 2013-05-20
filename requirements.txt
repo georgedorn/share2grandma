@@ -1,6 +1,6 @@
-Django==1.5.1
+Django<=1.6
 South==0.7.6
 django-social-auth==0.7.23
 -e git://github.com/tumblr/pytumblr.git#egg=PyTumblr-dev
--e git+ssh://git@github.com/georgedorn/django-registration.git#egg=django_registration-dev
+-e git://github.com/georgedorn/django-registration.git#egg=django_registration-dev
 
