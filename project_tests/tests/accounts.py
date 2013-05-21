@@ -38,10 +38,7 @@ class RegistrationTestCase(TestCase):
         
         self.social_auth_login_urls = [reverse('socialauth_begin', kwargs={'backend':backend}) 
                                         for backend in social_auth_names]
-        
-        import IPython
-        self.shell = IPython.embed
-    
+            
     
     def test_login_form_exists(self):
         """
