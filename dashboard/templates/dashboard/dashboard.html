@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Share2Grandma Dashboard</h1>
+
+    <p>We know you as {{ user.realname }}.  You signed up for Share2Grandma on {{ user.signup_date }}.</p>
+
+    {% if user.has_real_account %}
+    <p>You have a local Share2Grandma account.  Your username is {{ user.username }}.  <a href="@todo">Click
+    here</a> to change your password.</p>
+    {% else %}
+    <p>You do not have a Share2Grandma username and password because you signed up through {{ user.social_auth_signup_service }}.
+    <a href="{% url 'registration_register' %}">Click here</a> to create a username and password on Share2Grandma.</p>
+    {% endif %}
+    <p>Email to your recipients is dispatched from {{ user.originating_email }}.  <strong>You must add this address to
+    your recipients' whitelists</strong> or your messages won't go through!</p>
+
+
+<h2>Your service connections</h2>
+
+    <p>You've connected these sites to your Share2Grandma account.  You may be able to log in, subscribe to feeds, or
+    both, from these services.</p>
+
+    <ul>
+    {% if user.social_auth_services %}
+        {% for service in user.social_auth_services %}
+        <li>[logo] {{ service.name }}, connected {{ service.connect_date }}
+            <ul>
+                <li><strong>CAN{% if not service.login_available %}NOT{% endif %}</strong> login with this service</li>
+                <li><strong>CAN{% if not service.feeds_available  %}NOT{% endif %}</strong> subscribe to feeds with this service</li>
+            </ul>
+        </li>
+        {% endfor %}
+        <li><a href="@todo need a service chooser to feed into socialauth_begin">Add another</a> service?</li>
+    {% else %}
+        <li>No services set up yet.  <a href="@todo need a service chooser to feed into socialauth_begin">Add a service?</a></li>
+    {% endif %}
+    </ul>
+
+
+<h2>Your recipients</h2>
+
+    <p>You have set up these recipients.  Each recipient can subscribe to different feeds, and you can customize how
+    your name and telephone number appears to each recipient.</p>
+
+    <ul>
+    {% if user.recipients %}
+        {% for recipient in user.recipients %}
+        <li>{{ recipient.name }}, added on {{ recipient.add_date }}
+            <ul>
+                <li>Sees your name as {{ recipient.sender_name }} and your telephone number as {{ recipient.sender_phone }}.</li>
+                <li>Receives email at {{ recipient.email }}</li>
+                <li>Subscriptions:
+                    <ul>
+                    {% if recipient.subscriptions %}
+                        <li>Recipient has subscriptions set up. @todo include list template here.</li>
+                        <li><a href="{% url add_subscriptions %}">Add another subscription?</a></li>
+                    {% else %}
+                        <li>Recipient has no subscriptions set up. <a href="{% url 'subscriptions_create_tumblr' %}">Add some?</a></li>
+                    {% endif %}
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        {% endfor %}
+        <li><a href="@todo">Add another recipient?</a></li>
+    {% else %}
+        <li>You have no recipients set up. <a href="@todo">Add some recipients?</a></li>
+    {% endif %}
+    </ul>
+{% endblock %}
