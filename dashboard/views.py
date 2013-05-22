@@ -12,3 +12,4 @@ class FAQView(TemplateView):
 
 class DashboardView(TemplateView):
     template_name = "dashboard/dashboard.html"
+
