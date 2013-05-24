@@ -58,3 +58,27 @@ class TumblrSubscriptionTest(TestCase):
         self.assertTrue('default_avatar' in subscription.avatar)
         self.assertEqual('Demo', subscription.pretty_name)
         self.assertEqual(1269024321, subscription.last_post_ts)
+
+class TumblrSubscriptionDeleteTest(TestCase):
+    """
+    http://demo.tumblr.com/ is the 'fixture' in this case
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user('derplord')
+        self.user = User.objects.get_by_natural_key('derplord')
+
+    def test_delete_subscription(self):
+        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription.save()
+
+        sub_all = TumblrSubscription.objects.all()
+        result = len(sub_all)
+        self.assertEqual(result, 1)
+
+        new_sub = TumblrSubscription.objects.get(short_name='demo')
+        new_sub.delete()
+
+        del_sub = TumblrSubscription.objects.all()
+        result = len(del_sub)
+        self.assertEqual(result, 0)
