@@ -156,7 +156,7 @@ AUTHENTICATION_BACKENDS = (
 
 #Until this bug is in the next django release, don't change the LOGIN_URL.
 #https://code.djangoproject.com/ticket/20114
-LOGIN_URL          = '/login/'
+LOGIN_URL          = '/registration/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGIN_ERROR_URL    = '/login-error/'
 
