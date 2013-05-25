@@ -1,6 +1,7 @@
 # Django settings for share2grandma project.
 
 import os
+from os import getenv
 
 SETTINGS_PATH = os.path.dirname(__file__)
 PROJECT_PATH = os.path.dirname(SETTINGS_PATH)
@@ -161,8 +162,13 @@ LOGIN_ERROR_URL    = '/login-error/'
 
 ACCOUNT_ACTIVATION_DAYS = 7 #how long you have to verify your account before it's nuked
 SOCIAL_AUTH_FORCE_POST_DISCONNECT = True
-TUMBLR_CONSUMER_KEY = ''
-TUMBLR_CONSUMER_SECRET = ''
+
+TUMBLR_CONSUMER_KEY = getenv('TUMBLR_CONSUMER_KEY')
+TUMBLR_API_KEY = TUMBLR_CONSUMER_KEY
+TUMBLR_CONSUMER_SECRET = getenv('TUMBLR_CONSUMER_SECRET')
+
+GOOGLE_OAUTH2_CLIENT_ID = getenv('GOOGLE_OAUTH2_CLIENT_ID')
+GOOGLE_OAUTH2_CLIENT_SECRET = getenv('GOOGLE_OAUTH2_CLIENT_SECRET')
 
 #Don't run these social auth tests:
 SOCIAL_AUTH_TEST_TWITTER = False
