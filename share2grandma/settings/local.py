@@ -27,7 +27,12 @@ DATABASES = {
                          }
              }
 
+#These tumblr keys point to a demo app.  It redirects to localhost:8000.  Use in dev mode.
 TUMBLR_CONSUMER_KEY = 'PsbqraXHdjAOpHf31vJ7fa4UIyUTeRwVlX3AxUOmtwqHQWZgbh'
 TUMBLR_API_KEY = TUMBLR_CONSUMER_KEY
 TUMBLR_CONSUMER_SECRET = 'C1P3TznBoZsNtrfAxnQSoWLDSq0J6Msnk468OJfTMF90XOipbO'
+
+#These google keys point to a demo app.  Redirects to localhost:8000.
+GOOGLE_OAUTH2_CLIENT_ID = '203401500199-mmi2uonvq09ksnspjj8ofbt6gdi8upch.apps.googleusercontent.com'
+GOOGLE_OAUTH2_CLIENT_SECRET = 'sijcp1Uyx5l1O1vKTFEYij3x'
 

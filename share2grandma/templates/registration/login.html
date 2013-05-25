@@ -29,7 +29,11 @@
 
 <div id='social_login' style='float:left;padding-left:25px;border:black solid 1px;'>
 <h3>Or</h3>
-Log in with <a href="{% url "socialauth_begin" "tumblr" %}">Tumblr</a>
+Log in with:
+<ul>
+<li><a href="{% url "socialauth_begin" "tumblr" %}">Tumblr</a>
+<li><a href="{% url "socialauth_begin" "google-oauth2" %}">Google</a>
+</ul> 
 </div>
 
 
