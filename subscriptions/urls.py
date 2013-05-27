@@ -5,8 +5,8 @@ from .views import TumblrSubscriptionCreateView, SubscriptionDetailView, Generic
     SubscriptionDeleteView
 
 urlpatterns = patterns('',
-    (r'^create/tumblr', login_required(TumblrSubscriptionCreateView.as_view())),
-    (r'^list', login_required(GenericSubscriptionListView.as_view())),
-    (r'^detail/tumblr/(?P<pk>\d+)/$', login_required(SubscriptionDetailView.as_view())),
-    (r'^delete/tumblr/(?P<pk>\d+)/$', login_required(SubscriptionDeleteView.as_view())),
+    url(r'^create/tumblr', login_required(TumblrSubscriptionCreateView.as_view()), name='subscription_create_tumblr'),
+    url(r'^list', login_required(GenericSubscriptionListView.as_view()), name='subscription_list'),
+    url(r'^detail/tumblr/(?P<pk>\d+)/$', login_required(SubscriptionDetailView.as_view()), name='subscription_detail_tumblr'),
+    url(r'^delete/tumblr/(?P<pk>\d+)/$', login_required(SubscriptionDeleteView.as_view()), name='subscription_delete_tumblr'),
 )

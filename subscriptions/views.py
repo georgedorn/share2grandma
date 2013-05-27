@@ -21,4 +21,4 @@ class GenericSubscriptionListView(ListView):
 
 class SubscriptionDeleteView(DeleteView):
     model = TumblrSubscription
-    success_url = '/subscriptions/list/'
+    success_url = '/subscriptions/list/'    # @todo hardcoded url

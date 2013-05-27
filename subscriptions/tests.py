@@ -1,8 +1,9 @@
+from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from django.test import TestCase
+
 from .models import TumblrSubscription
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
-from django.contrib.auth.models import User
-
-from django.test import TestCase
 
 
 class TumblrSubscriptionProcessorTest(TestCase):
@@ -26,18 +27,22 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
 
     def test_get_blog_info_baduser(self):
+        # @todo
         pass
 
 
     def test_grab(self):
+        # @todo
         pass
 
 
     def test_grab_no_new_posts(self):
+        # @todo
         pass
 
 
     def test_mangle(self):
+        # @todo
         pass
 
 
@@ -47,10 +52,18 @@ class TumblrSubscriptionTest(TestCase):
     """
 
     def setUp(self):
-        self.user = User.objects.create_user('derplord')
+        self.userdata = {'username':'xenuuu',
+                         'password':'test_pass'}
+        self.user = User.objects.create_user(**self.userdata)
+        self.user = User.objects.get_by_natural_key('xenuuu')
 
+        self.login_url = reverse('auth_login')
+        self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
 
     def test_update_from_tumblr(self):
+        """
+        not via UI
+        """
         subscription = TumblrSubscription(short_name='demo')
 
         subscription.update_from_tumblr()
@@ -59,14 +72,42 @@ class TumblrSubscriptionTest(TestCase):
         self.assertEqual('Demo', subscription.pretty_name)
         self.assertEqual(1269024321, subscription.last_post_ts)
 
-class TumblrSubscriptionDeleteTest(TestCase):
-    """
-    http://demo.tumblr.com/ is the 'fixture' in this case
-    """
+    def test_create_tumblr_subscription_form_exists(self):
+        """
+        UI
+        """
+        self.client.login(**self.userdata)
 
-    def setUp(self):
-        self.user = User.objects.create_user('derplord')
-        self.user = User.objects.get_by_natural_key('derplord')
+        res = self.client.get(self.url_subscription_create_tumblr)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue("enter a tumblr subscription here" in res.rendered_content)
+        self.assertTrue('name="short_name"' in res.rendered_content)
+
+    def test_create_tumblr_subscription_via_ui(self):
+        self.client.login(**self.userdata)
+
+        res = self.client.post(self.url_subscription_create_tumblr,
+            {'user':self.user.pk,
+             'short_name':'demo',
+             'enabled':True},
+            follow=True)
+
+        obj = TumblrSubscription.objects.get(short_name='demo', user=self.user)
+        self.assertTrue(isinstance(obj, TumblrSubscription))
+
+        success = False
+        for toople in res.redirect_chain:
+            if reverse('subscription_detail_tumblr', kwargs={'pk':obj.pk}) in toople[0]:
+                if toople[1] >= 301 and toople[1] <= 302:
+                    # this redirect chain is a bit weird and might change, so be flexible..
+                    # we got redirected to the detail url for what we just created, so yay
+                    success = True
+        self.assertTrue(success)
+
+        self.assertTrue('http://assets.tumblr.com/images/default_avatar_64.png' in res.rendered_content)
+        self.assertTrue('Demo' in res.rendered_content)
+        self.assertTrue(self.user.username in res.rendered_content)
 
     def test_delete_subscription(self):
         subscription = TumblrSubscription(short_name='demo', user=self.user)
@@ -82,3 +123,32 @@ class TumblrSubscriptionDeleteTest(TestCase):
         del_sub = TumblrSubscription.objects.all()
         result = len(del_sub)
         self.assertEqual(result, 0)
+
+    def test_delete_subscription_via_url(self):
+        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription.save()
+
+        subscription = TumblrSubscription.objects.get(pk=subscription.pk)
+        self.assertTrue(isinstance(subscription, TumblrSubscription))
+        num_subscriptions = len(TumblrSubscription.objects.all())
+
+        self.client.login(**self.userdata)
+
+        res = self.client.get(reverse('subscription_delete_tumblr',
+                                      kwargs={'pk':subscription.pk}))
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue('Are you sure' in res.rendered_content)
+        res = self.client.post(reverse('subscription_delete_tumblr',
+                                      kwargs={'pk':subscription.pk}),
+                               data={'submit':'Delete'},
+                               follow=True)
+
+        # at the end of the redirect chain...
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(len(res.redirect_chain) >= 1)
+
+        # make sure we have one fewer TumblrSubscriptions than before
+        self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
+
+
