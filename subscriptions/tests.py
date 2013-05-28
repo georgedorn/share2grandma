@@ -2,8 +2,10 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from .models import TumblrSubscription
+from .models import TumblrSubscription, TumblrSubscriptionForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
+
+from IPython import embed
 
 
 class TumblrSubscriptionProcessorTest(TestCase):
@@ -81,8 +83,8 @@ class TumblrSubscriptionTest(TestCase):
         res = self.client.get(self.url_subscription_create_tumblr)
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue("enter a tumblr subscription here" in res.rendered_content)
-        self.assertTrue('name="short_name"' in res.rendered_content)
+        self.assertTrue(res.context[0].has_key('form'))
+        self.assertTrue(isinstance(res.context[0].get('form'), TumblrSubscriptionForm))
 
     def test_create_tumblr_subscription_via_ui(self):
         self.client.login(**self.userdata)
@@ -105,7 +107,7 @@ class TumblrSubscriptionTest(TestCase):
                     success = True
         self.assertTrue(success)
 
-        self.assertTrue('http://assets.tumblr.com/images/default_avatar_64.png' in res.rendered_content)
+        self.assertTrue('default_avatar_64.png' in res.rendered_content)
         self.assertTrue('Demo' in res.rendered_content)
         self.assertTrue(self.user.username in res.rendered_content)
 

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.forms import ModelForm
+from django.core.urlresolvers import reverse
 
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 
@@ -36,8 +37,7 @@ class TumblrSubscription(GenericSubscription):
         super(TumblrSubscription, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
-        # @todo harcoded url
-        return "/subscriptions/detail/tumblr/%d" % self.pk   # mchllweeks to write this view
+        return reverse('subscription_detail_tumblr', kwargs={'pk':self.pk})
 
     def __unicode__(self):
         # so it's intelligible in the django admin
