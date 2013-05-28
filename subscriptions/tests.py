@@ -14,7 +14,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('derplord')
         self.subscription = TumblrSubscription(user=self.user,
-                                     short_name='demo')
+                                               short_name='demo')
         self.tumblr = TumblrSubscriptionProcessor(self.subscription)
 
 
@@ -26,9 +26,16 @@ class TumblrSubscriptionProcessorTest(TestCase):
         self.assertEqual(1269024321, info['last_post_ts'])
 
 
-    def test_get_blog_info_baduser(self):
-        # @todo
-        pass
+    def test_instantiate_badblog(self):
+        my_subscription = TumblrSubscription(user=self.user,
+                                             short_name='zmxmdmcnnjjncn')
+        caught = False
+        try:
+            TumblrSubscriptionProcessor(my_subscription)
+        except KeyError, e:
+            caught = True
+
+        self.assertTrue(caught, "Didn't catch expected exception with bad blog name.")
 
 
     def test_grab(self):

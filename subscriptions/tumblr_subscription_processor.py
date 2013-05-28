@@ -8,7 +8,16 @@ class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
     def __init__(self, subscription=None):
         self.subscription = subscription
         self.client = TumblrRestClient(consumer_key=settings.TUMBLR_API_KEY)
-        self.tumblr_info = self.client.blog_info(subscription.short_name)['blog']
+        blog_info_raw = self.client.blog_info(subscription.short_name)
+
+        if 'meta' in blog_info_raw.keys():
+            e_msg = "Status %s - %s" % (blog_info_raw['meta']['status'], blog_info_raw['meta']['msg'])
+            if int(blog_info_raw['meta']['status']) == 404:
+                raise KeyError, e_msg
+            else:
+                raise ValueError, e_msg
+
+        self.tumblr_info = blog_info_raw['blog']
         self.tumblr_post_list = []
 
 
