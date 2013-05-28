@@ -104,9 +104,9 @@ class TumblrSubscriptionTest(TestCase):
         self.assertTrue(isinstance(obj, TumblrSubscription))
 
         success = False
-        for toople in res.redirect_chain:
-            if reverse('subscription_detail_tumblr', kwargs={'pk':obj.pk}) in toople[0]:
-                if toople[1] >= 301 and toople[1] <= 302:
+        for url, status in res.redirect_chain:
+            if reverse('subscription_detail_tumblr', kwargs={'pk':obj.pk}) in url:
+                if status >= 301 and status <= 302:
                     # this redirect chain is a bit weird and might change, so be flexible..
                     # we got redirected to the detail url for what we just created, so yay
                     success = True
@@ -158,7 +158,7 @@ class TumblrSubscriptionTest(TestCase):
         # make sure we have one fewer TumblrSubscriptions than before
         self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
 
-    def test_create_login_require(self):
+    def test_login_require(self):
         subscription = TumblrSubscription(short_name='demo', user=self.user)
         subscription.save()
 
@@ -172,11 +172,9 @@ class TumblrSubscriptionTest(TestCase):
             res = self.client.get(page, follow=True)
 
             success = False
-            for toople in res.redirect_chain:
-                if reverse('auth_login') in toople[0]:
-                    if toople[1] >= 301 and toople[1] <= 302:
-                        # this redirect chain is a bit weird and might change, so be flexible..
-                        # we got redirected to the detail url for what we just created, so yay
+            for url, status in res.redirect_chain:
+                if reverse('auth_login') in url:
+                    if status >= 301 and status <= 302:
                         success = True
             self.assertTrue(success)
 
