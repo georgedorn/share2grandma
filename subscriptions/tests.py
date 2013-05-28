@@ -158,4 +158,26 @@ class TumblrSubscriptionTest(TestCase):
         # make sure we have one fewer TumblrSubscriptions than before
         self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
 
+    def test_create_login_require(self):
+        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription.save()
+
+        obj = TumblrSubscription.objects.get(short_name='demo', user=self.user)
+        self.assertTrue(isinstance(obj, TumblrSubscription))
+
+        pages = [reverse('subscription_create_tumblr'), reverse('subscription_delete_tumblr', kwargs={'pk':obj.pk}),
+                 reverse('subscription_detail_tumblr', kwargs={'pk':obj.pk}), reverse('subscription_list')]
+
+        for page in pages:
+            res = self.client.get(page, follow=True)
+
+            success = False
+            for toople in res.redirect_chain:
+                if reverse('auth_login') in toople[0]:
+                    if toople[1] >= 301 and toople[1] <= 302:
+                        # this redirect chain is a bit weird and might change, so be flexible..
+                        # we got redirected to the detail url for what we just created, so yay
+                        success = True
+            self.assertTrue(success)
+
 
