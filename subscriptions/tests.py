@@ -5,8 +5,6 @@ from django.test import TestCase
 from .models import TumblrSubscription, TumblrSubscriptionForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 
-from IPython import embed
-
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
