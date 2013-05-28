@@ -1,4 +1,4 @@
-from django.views.generic import ListView, TemplateView, CreateView, DetailView, DeleteView
+from django.views.generic import ListView, CreateView, DetailView, DeleteView
 from django.core.urlresolvers import reverse_lazy
 
 from .models import TumblrSubscription, TumblrSubscriptionForm, GenericSubscription
