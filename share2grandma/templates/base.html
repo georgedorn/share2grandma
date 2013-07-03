@@ -1,6 +1,7 @@
+{% load i18n %}
 <html>
 <head>
-<title>{% block pagetitle %}DUMMY PAGETITLE - FIX ME{%endblock%}</title>
+<title>{% block pagetitle %}share2grandma - {% trans "put title variable here @todo" noop %}{%endblock%}</title>
 <style type="text/css">
     dt { font-weight: bold; display: inline; }
     dd { display: inline; margin-right: 2em; }
@@ -11,8 +12,8 @@
 <body>
 {% block header %}
 <div id='header'>
-{% if user.is_authenticated %}Hello {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">Logout</a>
-{% else %}<a href="{% url "auth_login" %}">Login</a>
+{% if user.is_authenticated %}{% trans "Hello" noop %} {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">{% trans "Logout" noop %}</a>
+{% else %}<a href="{% url "auth_login" %}">{% trans "Login" noop %}</a>
 {% endif %}
 </div>
 {% endblock %}

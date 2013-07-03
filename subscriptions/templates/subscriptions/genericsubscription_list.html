@@ -1,18 +1,19 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block content %}
-    <h1>Subscriptions</h1>
+    <h1>{% trans "Subscriptions" noop %}</h1>
     <dl>
         {% for subscription in object_list %}
             <dt class="top"><br>User</dt>
             <dd>{{ subscription.user }}</dd>
-            <dt>Enabled?</dt>
+            <dt>{% trans "Enabled?" noop %}</dt>
             <dd>{{ subscription.enabled }}</dd>
-            <dt>Short name</dt>
+            <dt>{% trans "Short name" noop %}</dt>
             <dd>{{ subscription.short_name }}</dd>
-            <dt>Pretty name</dt>
+            <dt>{% trans "Pretty name" noop %}</dt>
             <dd>{{ subscription.pretty_name }}</dd>
-            <dt>Avatar</dt>
+            <dt>{% trans "Avatar" noop %}</dt>
             <dd><img src="{{ subscription.avatar }}"></dd>
         {% endfor %}
     </dl>

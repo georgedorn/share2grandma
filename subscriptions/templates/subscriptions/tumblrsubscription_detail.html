@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block content %}
-    <h1>Details</h1>
+    <h1>{% trans "Details" noop %}</h1>
     <dl>
-        <dt class="top"><br>User</dt>
+        <dt class="top"><br>{% trans "User" noop %}</dt>
         <dd>{{ object.user }}</dd>
-        <dt>Enabled?</dt>
+        <dt>{% trans "Enabled?" noop %}</dt>
         <dd>{{ object.enabled }}</dd>
-        <dt>Short name</dt>
+        <dt>{% trans "Short name" noop %}</dt>
         <dd>{{ object.short_name }}</dd>
-        <dt>Pretty name</dt>
+        <dt>{% trans "Pretty name" noop %}</dt>
         <dd>{{ object.pretty_name }}</dd>
-        <dt>Avatar</dt>
+        <dt>{% trans "Avatar" noop %}</dt>
         <dd><img src="{{ object.avatar }}"></dd>
     </dl>
 {% endblock %}
