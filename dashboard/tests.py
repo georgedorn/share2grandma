@@ -1,16 +1,13 @@
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
+from django.core.urlresolvers import reverse
 
 from django.test import TestCase
 
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
+class URLRedirectTest(TestCase):
+
+    def test_root_url_redirects_to_dashboard(self):
+        res = self.client.get('/', follow=True)
+        redir = res.redirect_chain[0]
+
+        self.assertTrue(reverse('dashboard_main') in redir[0])
+        self.assertEqual(redir[1], 301)
