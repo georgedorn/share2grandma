@@ -189,3 +189,38 @@ class TumblrSubscriptionTest(TestCase):
             self.assertTrue(success)
 
 
+class RecipientTest(TestCase):
+    """
+    http://demo.tumblr.com/ is the 'fixture' in this case
+    """
+
+    def setUp(self):
+        self.userdata = {'username':'xenuuu',
+                         'password':'test_pass'}
+        self.user = User.objects.create_user(**self.userdata)
+        self.user = User.objects.get_by_natural_key('xenuuu')
+
+        self.recipient = Recipient.objects.create(user=self.user,
+                                                  name='nan',
+                                                  email='elsa@yahoo.com')
+
+        self.login_url = reverse('auth_login')
+        self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
+
+
+    def test_create_recipient_form_exists(self):
+        raise NotImplementedError
+
+    def test_create_recipient_via_ui(self):
+        raise NotImplementedError
+
+    def test_delete_required(self):
+        raise NotImplementedError
+
+    def test_delete_required_via_url(self):
+        raise NotImplementedError
+
+    def test_login_required_recipients(self):
+        raise NotImplementedError
+
+
