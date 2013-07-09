@@ -71,7 +71,6 @@ class TumblrSubscription(GenericSubscription):
 admin.site.register(TumblrSubscription)
 
 
-
 class Vacation(models.Model):
     recipient = models.ForeignKey(Recipient, related_name='vacations')
     start_date = models.DateTimeField()
