@@ -3,6 +3,7 @@
 
 {% block content %}
     <h1>{% trans "Details" noop %}</h1>
+    <a href="{% url "subscription_delete_tumblr" pk=object.pk %}">Delete</a>
     <dl>
         <dt class="top"><br>{% trans "User" noop %}</dt>
         <dd>{{ object.user }}</dd>
