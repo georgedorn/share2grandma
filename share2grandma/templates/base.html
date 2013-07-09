@@ -15,6 +15,11 @@
 {% if user.is_authenticated %}{% trans "Hello" noop %} {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">{% trans "Logout" noop %}</a>
 {% else %}<a href="{% url "auth_login" %}">{% trans "Login" noop %}</a>
 {% endif %}
+<dl>
+    <dt><a href="{% url "dashboard_main" %}">Dashboard</a></dt>
+    <dt><a href="{% url "subscription_create_tumblr" %}">Add Subscription</a></dt>
+    <dt><a href="{% url "subscription_list" %}">Subscription List</a></dt>
+</dl>
 </div>
 {% endblock %}
 {% block content %}{% endblock %}

@@ -3,8 +3,10 @@
 
 {% block content %}
     <h1>{% trans "Subscriptions" noop %}</h1>
+    <a href="{% url "subscription_create_tumblr" %}">Add</a>
     <dl>
         {% for subscription in object_list %}
+        <a href="{% url "subscription_detail_tumblr" pk=subscription.pk %}">
             <dt class="top"><br>User</dt>
             <dd>{{ subscription.user }}</dd>
             <dt>{% trans "Enabled?" noop %}</dt>
@@ -15,6 +17,8 @@
             <dd>{{ subscription.pretty_name }}</dd>
             <dt>{% trans "Avatar" noop %}</dt>
             <dd><img src="{{ subscription.avatar }}"></dd>
+        </a>
         {% endfor %}
+
     </dl>
 {% endblock %}
