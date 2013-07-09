@@ -82,7 +82,6 @@ class TumblrSubscription(GenericSubscription):
 admin.site.register(TumblrSubscription)
 
 
-
 class DailyWakeupSubscription(GenericSubscription):
     def get_absolute_url(self):
         return reverse('subscription_detail_dailywakeup', kwargs={'pk':self.pk})
@@ -92,7 +91,6 @@ class DailyWakeupSubscription(GenericSubscription):
         return "%s (DailyWakeup) sub for %s" % (self.short_name, self.user)
 
 admin.site.register(DailyWakeupSubscription)
-
 
 
 class Vacation(models.Model):
