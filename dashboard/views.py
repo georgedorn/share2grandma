@@ -3,7 +3,8 @@ from django.shortcuts import render
 from django.views.generic import ListView, TemplateView, CreateView
 from braces.views import LoginRequiredMixin
 
-from subscriptions.models import GenericSubscription, TumblrSubscription, TumblrSubscriptionForm
+from subscriptions.models import GenericSubscription, TumblrSubscription
+from subscriptions.forms import TumblrSubscriptionForm
 
 
 class FAQView(TemplateView):

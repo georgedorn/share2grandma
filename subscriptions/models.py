@@ -43,12 +43,5 @@ class TumblrSubscription(GenericSubscription):
         # so it's intelligible in the django admin
         return "%s (Tumblr) sub for %s" % (self.short_name, self.user)
 
-
-class TumblrSubscriptionForm(ModelForm):
-    class Meta:
-        model = TumblrSubscription
-        exclude = ('pretty_name', 'avatar', 'last_post_ts')     # user can't twiddle these
-
-
 admin.site.register(TumblrSubscription)
 

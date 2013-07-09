@@ -2,7 +2,8 @@ from django.views.generic import ListView, CreateView, DetailView, DeleteView
 from django.core.urlresolvers import reverse_lazy
 from braces.views import LoginRequiredMixin
 
-from .models import TumblrSubscription, TumblrSubscriptionForm, GenericSubscription
+from .models import TumblrSubscription, GenericSubscription
+from .forms import TumblrSubscriptionForm
 
 # http://stackoverflow.com/questions/5773724/how-do-i-use-createview-with-a-modelform
 class TumblrSubscriptionCreateView(LoginRequiredMixin, CreateView):
