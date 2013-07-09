@@ -1,11 +1,20 @@
+from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.utils import timezone as dutz
 
-from .models import TumblrSubscription, Recipient
+from .models import TumblrSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm
 
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
+import pytz
+
+def fixed_now():
+    """
+    Returns a constant datetime object, instead of now().
+    """
+    return datetime(2012, 12, 12)
 
 
 class TumblrSubscriptionProcessorTest(TestCase):
@@ -56,13 +65,9 @@ class TumblrSubscriptionProcessorTest(TestCase):
     def test_mangle(self):
         # @todo
         pass
-
-
-class TumblrSubscriptionTest(TestCase):
-    """
-    http://demo.tumblr.com/ is the 'fixture' in this case
-    """
-
+    
+    
+class SubscriptionTestCase(TestCase):
     def setUp(self):
         self.userdata = {'username':'xenuuu',
                          'password':'test_pass'}
@@ -73,6 +78,14 @@ class TumblrSubscriptionTest(TestCase):
                                                   name='nan',
                                                   email='elsa@yahoo.com')
 
+
+
+class TumblrSubscriptionTest(SubscriptionTestCase):
+    """
+    http://demo.tumblr.com/ is the 'fixture' in this case
+    """
+    def setUp(self):
+        super(TumblrSubscriptionTest, self).setUp()
         self.login_url = reverse('auth_login')
         self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
 
@@ -105,6 +118,7 @@ class TumblrSubscriptionTest(TestCase):
 
         res = self.client.post(self.url_subscription_create_tumblr,
             {'user':self.user.pk,
+             'recipient':self.recipient.pk,
              'short_name':'demo',
              'enabled':True},
             follow=True)
@@ -224,3 +238,84 @@ class RecipientTest(TestCase):
         raise NotImplementedError
 
 
+            
+class VacationTests(SubscriptionTestCase):
+    
+    def test_not_on_vacation(self):
+        self.assertFalse(self.recipient.is_on_vacation())
+
+    def test_is_on_vacation_obvious(self):
+        now = dutz.now()
+        last_week = now - timedelta(days=7)
+        next_week = now + timedelta(days=7)
+        Vacation.objects.create(recipient=self.recipient,
+                                start_date=last_week,
+                                end_date=next_week)
+        
+        self.assertTrue(self.recipient.is_on_vacation())
+
+    def test_is_not_on_vacation_timezone(self):
+        """
+        A test of an edge case where a recipient's vacation is in a different time zone than the server.
+        """
+        timezone = pytz.timezone('Europe/Amsterdam')
+        self.recipient.timezone = timezone
+        self.recipient.save()
+        now = datetime.now()
+        
+        #the trick here is that pytz.timezone.localize takes a naive datetime
+        #and appends a timezone without altering the datetime.
+        #e.g. if it is 8pm now in America/Los_Angeles,
+        #this results in a start of 6pm in Europe/Amsterdam
+        start = timezone.localize(now - timedelta(hours=2))
+        #and this would result in end of 10pm in Europe/Amsterdam
+        end = timezone.localize(now + timedelta(hours=2))
+        
+        Vacation.objects.create(recipient=self.recipient,
+                                start_date=start,
+                                end_date=end)
+        #Amsterdam is 8-9 hours ahead depending on DST, so this 4-hour vacation
+        #was actually over about 4 hours ago
+        self.assertFalse(self.recipient.is_on_vacation())
+        
+    def test_is_on_vacation_timezone(self):
+        """
+        Like previous test, create a vacation in another timezone, but
+        make it overlap the current time in the server's timezone.
+        """
+        timezone = pytz.timezone('Europe/Amsterdam') # 8-9 hours ahead
+        self.recipient.timezone = timezone
+        self.recipient.save()
+        
+        now = datetime.now()
+        
+        start = timezone.localize(now + timedelta(hours=6)) #less than 8-9 hours from now
+        end = timezone.localize(now + timedelta(hours=12))
+        
+        Vacation.objects.create(recipient=self.recipient,
+                                start_date=start,
+                                end_date=end
+                                )
+        self.assertTrue(self.recipient.is_on_vacation())
+                                
+
+    def test_stupid_vacation(self):
+        """
+        Ensure that creating a vacation without timezone info results
+        in using the recipient's timezone.
+        """
+        timezone = pytz.timezone('America/New_York')
+        self.recipient.timezone = timezone
+        self.recipient.save()
+        
+        start = datetime(year=2012, month=12, day=12, hour=12)
+        end = datetime(year=2012, month=12, day=14, hour=12)
+        
+        vacation = Vacation.objects.create(recipient=self.recipient,
+                                           start_date=start,
+                                           end_date=end)
+        
+        self.assertEqual(vacation.start_date.tzinfo,
+                         timezone)
+        self.assertEqual(vacation.end_date.tzinfo,
+                         timezone)
