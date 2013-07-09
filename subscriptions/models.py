@@ -83,4 +83,3 @@ class Vacation(models.Model):
             self.end_date = timezone.make_aware(self.end_date, self.recipient.timezone)
             
         return super(Vacation, self).save(*args, **kwargs)
-
