@@ -106,7 +106,6 @@ class ProfileTestCase(SubscriptionTestCase):
         # @todo
         self.skipTest('write me')
 
-<<<<<<< HEAD
 
 class TumblrSubscriptionTest(SubscriptionTestCase):
     """
@@ -114,8 +113,6 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
     """
     def setUp(self):
         super(TumblrSubscriptionTest, self).setUp()
-=======
->>>>>>> initial Recipient commit; 1 broken test, pushing for collaboration
         self.login_url = reverse('auth_login')
         self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
 
