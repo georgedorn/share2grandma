@@ -240,7 +240,6 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
             self.assertTrue(success)
 
 
-
 class RecipientTest(SubscriptionTestCase):
     """
     http://demo.tumblr.com/ is the 'fixture' in this case
@@ -363,8 +362,6 @@ class RecipientTest(SubscriptionTestCase):
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
 
-
-            
 class VacationTests(SubscriptionTestCase):
     
     def test_not_on_vacation(self):
