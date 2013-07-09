@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from .models import TumblrSubscription, TumblrSubscriptionForm
+from .models import TumblrSubscription, TumblrSubscriptionForm, Recipient
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 
 
@@ -13,7 +13,10 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('derplord')
-        self.subscription = TumblrSubscription(user=self.user,
+        self.recipient = Recipient.objects.create(user=self.user,
+                                                  name='granny',
+                                                  email='mams@aol.com')
+        self.subscription = TumblrSubscription(recipient=self.recipient,
                                                short_name='demo')
         self.tumblr = TumblrSubscriptionProcessor(self.subscription)
 
@@ -27,7 +30,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
 
     def test_instantiate_badblog(self):
-        my_subscription = TumblrSubscription(user=self.user,
+        my_subscription = TumblrSubscription(recipient=self.recipient,
                                              short_name='zmxmdmcnnjjncn')
         caught = False
         try:
@@ -63,6 +66,10 @@ class TumblrSubscriptionTest(TestCase):
                          'password':'test_pass'}
         self.user = User.objects.create_user(**self.userdata)
         self.user = User.objects.get_by_natural_key('xenuuu')
+
+        self.recipient = Recipient.objects.create(user=self.user,
+                                                  name='nan',
+                                                  email='elsa@yahoo.com')
 
         self.login_url = reverse('auth_login')
         self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
@@ -100,7 +107,8 @@ class TumblrSubscriptionTest(TestCase):
              'enabled':True},
             follow=True)
 
-        obj = TumblrSubscription.objects.get(short_name='demo', user=self.user)
+        # @todo temp broken
+        obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
 
         success = False
@@ -117,7 +125,7 @@ class TumblrSubscriptionTest(TestCase):
         self.assertTrue(self.user.username in res.rendered_content)
 
     def test_delete_subscription(self):
-        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
         sub_all = TumblrSubscription.objects.all()
@@ -132,7 +140,7 @@ class TumblrSubscriptionTest(TestCase):
         self.assertEqual(result, 0)
 
     def test_delete_subscription_via_url(self):
-        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
         subscription = TumblrSubscription.objects.get(pk=subscription.pk)
@@ -159,10 +167,10 @@ class TumblrSubscriptionTest(TestCase):
         self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
 
     def test_login_require(self):
-        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
-        obj = TumblrSubscription.objects.get(short_name='demo', user=self.user)
+        obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
 
         pages = [reverse('subscription_create_tumblr'), reverse('subscription_delete_tumblr', kwargs={'pk':obj.pk}),
