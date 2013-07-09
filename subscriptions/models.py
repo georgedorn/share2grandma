@@ -7,11 +7,19 @@ from django.core.urlresolvers import reverse
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 
 class GenericSubscription(models.Model):
-    user = models.ForeignKey(User, related_name='subscriptions')
+    recipient = models.ForeignKey('Recipient', related_name='subscriptions')
     enabled = models.BooleanField(default=True)
     short_name = models.CharField(null=False, max_length=16)
     pretty_name = models.CharField(blank=True, max_length=80)
     avatar = models.TextField(null=True, blank=True)      # set to generic for subscriptions w/no avatar
+
+
+class Recipient(models.Model):
+    user = models.ForeignKey(User, related_name='recipients')
+    name = models.CharField(null=False, blank=False, max_length=64)
+    add_date = models.DateField(auto_now_add=True)
+    email = models.EmailField(null=False, blank=False)
+
 
 
 class TumblrSubscription(GenericSubscription):
