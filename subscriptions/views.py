@@ -11,6 +11,8 @@ from braces.views import LoginRequiredMixin
 from .models import TumblrSubscription, GenericSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 
+from django.shortcuts import get_object_or_404
+from subscriptions.models import Recipient
 
 # http://stackoverflow.com/questions/5773724/how-do-i-use-createview-with-a-modelform
 class TumblrSubscriptionCreateView(LoginRequiredMixin, CreateView):
@@ -115,8 +117,3 @@ class VacationDeleteView(LoginRequiredMixin, DeleteView):
             vacation.delete()
 
         return HttpResponseRedirect(self.get_success_url())
-    
-        
-    
-    
-    

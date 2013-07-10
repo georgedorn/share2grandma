@@ -7,10 +7,9 @@ from django.test import TestCase
 from django.utils import timezone as dutz
 
 from .models import TumblrSubscription, Recipient, Vacation
-from .forms import TumblrSubscriptionForm, RecipientForm
+from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
-from subscriptions.forms import VacationForm
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
