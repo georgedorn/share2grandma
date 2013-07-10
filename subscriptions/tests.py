@@ -11,13 +11,6 @@ from .forms import TumblrSubscriptionForm, RecipientForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
 
-def fixed_now():
-    """
-    Returns a constant datetime object, instead of now().
-    """
-    return datetime(2012, 12, 12)
-
-
 class TumblrSubscriptionProcessorTest(TestCase):
     """
     http://demo.tumblr.com/ is the 'fixture' in this case

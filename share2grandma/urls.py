@@ -26,5 +26,6 @@ urlpatterns = patterns('',
 
     ### ours
     url(r'^dashboard/', include('dashboard.urls')),
-    url(r'^subscriptions/', include('subscriptions.urls'))
+    url(r'^subscriptions/', include('subscriptions.urls')),
+    
 )
