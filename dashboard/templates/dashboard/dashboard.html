@@ -21,8 +21,8 @@
     both, from these services.</p>
 
     <ul>
-    {% if user.social_auth_services %}
-        {% for service in user.social_auth_services %}
+    {% if user.social_auth_services.count %}
+        {% for service in user.social_auth_services.all %}
         <li>[logo] {{ service.name }}, connected {{ service.connect_date }}
             <ul>
                 <li><strong>CAN{% if not service.login_available %}NOT{% endif %}</strong> login with this service</li>
@@ -43,8 +43,8 @@
     your name and telephone number appears to each recipient.</p>
 
     <ul>
-    {% if user.recipients %}
-        {% for recipient in user.recipients %}
+    {% if user.recipients.count %}
+        {% for recipient in user.recipients.all %}
         <li>{{ recipient.name }}, added on {{ recipient.add_date }}
             <ul>
                 <li>Sees your name as {{ recipient.sender_name }} and your telephone number as {{ recipient.sender_phone }}.</li>

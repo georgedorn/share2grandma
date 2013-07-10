@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse_lazy
 from braces.views import LoginRequiredMixin
 
 from .models import TumblrSubscription, GenericSubscription, Recipient
-from .forms import TumblrSubscriptionForm
+from .forms import TumblrSubscriptionForm, RecipientForm
 
 
 # http://stackoverflow.com/questions/5773724/how-do-i-use-createview-with-a-modelform
@@ -14,7 +14,7 @@ class TumblrSubscriptionCreateView(LoginRequiredMixin, CreateView):
 
 class RecipientCreateView(LoginRequiredMixin, CreateView):
     model = Recipient
-    #form_class = RecipientForm
+    form_class = RecipientForm
 
 
 class RecipientDetailView(LoginRequiredMixin, DetailView):

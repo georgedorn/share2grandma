@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Recipient Details" noop %}</h1>
+    {# <a href="{% url "recipient_delete" pk=object.pk %}">Delete</a> #}
+    <dl>
+        <dt class="top"><br>{% trans "Sender" noop %}</dt>
+        <dd>{{ object.user }}</dd>
+        <dt>{% trans "Sender Name" noop %}</dt>
+        <dd>{{ object.sender_name }}</dd>
+        <dt>{% trans "Sender Phone" noop %}</dt>
+        <dd>{{ object.sender_phone }}</dd>
+        <dt>{% trans "Recipient Name" noop %}</dt>
+        <dd>{{ object.name }}</dd>
+        <dt>{% trans "Add Date" noop %}</dt>
+        <dd>{{ object.add_date }}</dd>
+        <dt>{% trans "Email" noop %}</dt>
+        <dd>{{ object.email }}</dd>
+        <dt>{% trans "Time Zone" noop %}</dt>
+        <dd>{{ object.timezone }}</dd>
+        <dt>{% trans "On vacation?" noop %}</dt>
+        <dd>{{ object.is_on_vaation }}</dd>
+    </dl>
+{% endblock %}
