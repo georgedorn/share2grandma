@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone as dutz
 
 from .models import TumblrSubscription, Recipient, Vacation
-from .forms import TumblrSubscriptionForm
+from .forms import TumblrSubscriptionForm, RecipientForm
 
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
@@ -203,6 +203,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
             self.assertTrue(success)
 
 
+
 class RecipientTest(TestCase):
     """
     http://demo.tumblr.com/ is the 'fixture' in this case
@@ -219,24 +220,83 @@ class RecipientTest(TestCase):
                                                   email='elsa@yahoo.com')
 
         self.login_url = reverse('auth_login')
-        self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
+        self.url_recipient_create = reverse('recipient_create')
 
 
     def test_create_recipient_form_exists(self):
-        raise NotImplementedError
+        """
+        Test that the form is there and non-500, etc
+        """
+        self.client.login(**self.userdata)
+
+        res = self.client.get(self.url_recipient_create)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context[0].has_key('form'))
+        self.assertTrue(isinstance(res.context[0].get('form'), RecipientForm))
+
 
     def test_create_recipient_via_ui(self):
-        raise NotImplementedError
+        """
+        Use the create form and test that it works right.
+        """
+        self.client.login(**self.userdata)
 
-    def test_delete_required(self):
-        raise NotImplementedError
+        granny_data = \
+            {'user':self.user.pk,
+             'sender_name':'bobby',
+             'sender_phone':'111-222-3344',
+             'name':'Granny Em',
+             'email':'emgran@aol.com',
+             }   # @todo test timezone crap
 
-    def test_delete_required_via_url(self):
-        raise NotImplementedError
+        res = self.client.post(self.url_recipient_create,
+            granny_data,
+            follow=True)
 
-    def test_login_required_recipients(self):
-        raise NotImplementedError
+        self.assertTrue(Recipient.objects.count() == 2)  # includes fixture
 
+        obj = Recipient.objects.get(name='Granny Em')
+        self.assertTrue(isinstance(obj, Recipient))
+
+        success = False
+        for url, status in res.redirect_chain:
+            if reverse('recipient_detail', kwargs={'pk':obj.pk}) in url:
+                if status >= 301 and status <= 302:
+                    # this redirect chain is a bit weird and might change, so be flexible..
+                    # we got redirected to the detail url for what we just created, so yay
+                    success = True
+        self.assertTrue(success)
+
+        u = granny_data.pop('user')
+        self.assertTrue(u.name in res.rendered_content)
+
+        for s in granny_data:
+            self.assertTrue(s in res.rendered_content)
+
+
+    def test_delete(self):
+        """
+        Delete a Recipient object directly
+        """
+        self.assertTrue(self.user.recipients.count() == 1)
+        self.recipient.delete()
+        self.assertTrue(self.user.recipients.count() == 0)
+
+
+    def test_delete_via_ui(self):
+        """
+        Delete a Recipient via the UI
+        """
+        # not yet implemented, different story
+        pass
+
+
+    def test_detail_view(self):
+        """
+        Test that the Recipient detail view displays the right stuff
+        """
+        raise NotImplementedError
 
             
 class VacationTests(SubscriptionTestCase):
