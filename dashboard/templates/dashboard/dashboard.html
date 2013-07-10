@@ -53,9 +53,9 @@
                     <ul>
                     {% if recipient.subscriptions %}
                         <li>Recipient has subscriptions set up. @todo include list template here.</li>
-                        <li><a href="{% url add_subscriptions %}">Add another subscription?</a></li>
+                        <li><a href="{% url 'subscription_create_tumblr' %}">Add another subscription?</a></li>
                     {% else %}
-                        <li>Recipient has no subscriptions set up. <a href="{% url 'subscriptions_create_tumblr' %}">Add some?</a></li>
+                        <li>Recipient has no subscriptions set up. <a href="{% url 'subscription_create_tumblr' %}">Add some?</a></li>
                     {% endif %}
                     </ul>
                 </li>
