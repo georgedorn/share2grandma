@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+{% blocktrans with name=recipient.name%}
+{{name}} is going on vacation? Enter details here.
+{% endblocktrans %}
+<form method="post">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Submit" />
+</form>
+
+<script type='text/javascript'>
+$(document).ready(
+	function(){
+		$('.vDateField').datepicker({
+			changeMonth: true,
+			changeYear: true,
+			yearRange: "2013:2099"
+		});
+	}
+);
+
+
+</script>
+
+{% endblock  %}
