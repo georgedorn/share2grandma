@@ -45,7 +45,7 @@
     <ul>
     {% if user.recipients.count %}
         {% for recipient in user.recipients.all %}
-        <li>{{ recipient.name }}, added on {{ recipient.add_date }}
+        <li><a href="{% url 'recipient_detail' recipient.pk %}">{{ recipient.name }}</a>, added on {{ recipient.add_date }}
             <ul>
                 <li>Sees your name as {{ recipient.sender_name }} and your telephone number as {{ recipient.sender_phone }}.</li>
                 <li>Receives email at {{ recipient.email }}</li>
@@ -62,9 +62,9 @@
             </ul>
         </li>
         {% endfor %}
-        <li><a href="@todo">Add another recipient?</a></li>
+        <li><a href="{% url 'recipient_create' %}">Add another recipient?</a></li>
     {% else %}
-        <li>You have no recipients set up. <a href="@todo">Add some recipients?</a></li>
+        <li>You have no recipients set up. <a href="{% url 'recipient_create' %}">Add some recipients?</a></li>
     {% endif %}
     </ul>
 {% endblock %}
