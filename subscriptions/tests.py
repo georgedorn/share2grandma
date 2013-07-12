@@ -248,7 +248,8 @@ class RecipientTest(TestCase):
              'sender_phone':'111-222-3344',
              'name':'Granny Em',
              'email':'emgran@aol.com',
-             }   # @todo test timezone crap
+             'timezone':'America/Indiana/Knox'
+             }
 
         res = self.client.post(self.url_recipient_create,
             granny_data,
@@ -268,11 +269,12 @@ class RecipientTest(TestCase):
                     success = True
         self.assertTrue(success)
 
-        u = granny_data.pop('user')
-        self.assertTrue(u.name in res.rendered_content)
+        granny_data.pop('user')     # not looking for pk in output
+        self.assertTrue(self.user.username in res.rendered_content)
 
-        for s in granny_data:
-            self.assertTrue(s in res.rendered_content)
+        for s in granny_data.values():
+            self.assertTrue(s in res.rendered_content,
+                            'Expected "%s" in rendered_content' % s)
 
 
     def test_delete(self):
@@ -296,7 +298,41 @@ class RecipientTest(TestCase):
         """
         Test that the Recipient detail view displays the right stuff
         """
-        raise NotImplementedError
+        self.client.login(**self.userdata)
+
+        res = self.client.get(reverse('recipient_detail', kwargs={'pk':self.recipient.pk}),
+            follow=True)
+
+        for field in self.recipient._meta.fields:
+            v = getattr(self.recipient, field.name)
+
+            if field.name == 'add_date':
+                v = v.strftime('%B %d, %Y')     # @todo: use whatever Django's using instead of hardcoding
+
+            self.assertTrue(str(v) in res.rendered_content,
+                            "Expected value '%s' for field '%s' in rendered content" % (v, field))
+
+
+    def test_dashboard_recipient_display(self):
+        """
+        Test that the Recipient shows up on the dashboard
+        """
+        self.client.login(**self.userdata)
+
+        res = self.client.get(reverse('dashboard_main'), follow=True)
+
+        for field in self.recipient._meta.fields:
+            v = getattr(self.recipient, field.name)
+
+            if field.name == 'add_date':
+                v = v.strftime('%B %d, %Y')     # @todo: use whatever Django's using instead of hardcoding
+            if field.name == 'timezone':
+                continue    # not currently displayed.
+
+            self.assertTrue(str(v) in res.rendered_content,
+                            "Expected value '%s' for field '%s' in rendered content" % (v, field))
+
+
 
             
 class VacationTests(SubscriptionTestCase):

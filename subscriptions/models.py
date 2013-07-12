@@ -29,6 +29,9 @@ class Recipient(models.Model):
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
 
+    def get_absolute_url(self):
+        return reverse('recipient_detail', kwargs={'pk':self.pk})
+
     def is_on_vacation(self):
         now = timezone.now()
         return Vacation.objects.filter(start_date__lt=now,
