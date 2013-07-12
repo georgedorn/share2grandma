@@ -1,70 +1,88 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block content %}
-<h1>Share2Grandma Dashboard</h1>
+<h1>{% trans "Share2Grandma Dashboard" %}</h1>
 
-    <p>We know you as {{ user.realname }}.  You signed up for Share2Grandma on {{ user.signup_date }}.</p>
+    <p>{% blocktrans %}We know you as {{ user.realname }}.  You signed up for Share2Grandma on {{ user.signup_date }}.{% endblocktrans %}</p>
 
     {% if user.has_real_account %}
-    <p>You have a local Share2Grandma account.  Your username is {{ user.username }}.  <a href="@todo">Click
-    here</a> to change your password.</p>
+        <p>{% blocktrans with username=user.username %}
+            You have a local Share2Grandma account.  Your username is {{ username }}.  <a href="@todo">Click
+            here</a> to change your password.
+        {% endblocktrans %}</p>
     {% else %}
-    <p>You do not have a Share2Grandma username and password because you signed up through {{ user.social_auth_signup_service }}.
-    <a href="{% url 'registration_register' %}">Click here</a> to create a username and password on Share2Grandma.</p>
+        <p>{% blocktrans with service=user.social_auth_signup_service %}
+            You do not have a Share2Grandma username and password because you signed up through {{ service }}.
+            {% endblocktrans %}
+            <a href="{% url 'registration_register' %}">{% trans "Click here" context "to do x" %}</a> {% trans "to create a username and password on Share2Grandma." context "do x to ..." %}
+        </p>
     {% endif %}
-    <p>Email to your recipients is dispatched from {{ user.originating_email }}.  <strong>You must add this address to
-    your recipients' whitelists</strong> or your messages won't go through!</p>
+
+     <p>{% blocktrans with myemail=user.originating_email %}
+         Email to your recipients is dispatched from {{ myemail }}.  <strong>You must add this address to
+        your recipients' whitelists</strong> or your messages won't go through!
+     {% endblocktrans %}</p>
 
 
-<h2>Your service connections</h2>
+<h2>{% trans "Your service connections" %}</h2>
 
-    <p>You've connected these sites to your Share2Grandma account.  You may be able to log in, subscribe to feeds, or
-    both, from these services.</p>
+    <p>{% blocktrans %}You've connected these sites to your Share2Grandma account.  You may be able to log in, subscribe to feeds, or
+    both, from these services.{% endblocktrans %}</p>
 
     <ul>
     {% if user.social_auth_services.count %}
         {% for service in user.social_auth_services.all %}
-        <li>[logo] {{ service.name }}, connected {{ service.connect_date }}
+        <li>[logo] {{ service.name }}, {% trans "connected" context "service, ___ [date]" %} {{ service.connect_date }}
             <ul>
-                <li><strong>CAN{% if not service.login_available %}NOT{% endif %}</strong> login with this service</li>
-                <li><strong>CAN{% if not service.feeds_available  %}NOT{% endif %}</strong> subscribe to feeds with this service</li>
+                <li><strong>{# @todo whole line i18n fixup #}CAN{% if not service.login_available %}NOT{% endif %}</strong> login with this service</li>
+                <li><strong>{# @todo whole line  i18n fixup #}CAN{% if not service.feeds_available  %}NOT{% endif %}</strong> subscribe to feeds with this service</li>
             </ul>
         </li>
         {% endfor %}
-        <li><a href="@todo need a service chooser to feed into socialauth_begin">Add another</a> service?</li>
+        <li>{% blocktrans %}<a href="@todo need a service chooser to feed into socialauth_begin">Add another</a> service?{% endblocktrans %}</li>
     {% else %}
-        <li>No services set up yet.  <a href="@todo need a service chooser to feed into socialauth_begin">Add a service?</a></li>
+        <li>{% blocktrans %}No services set up yet.  <a href="@todo need a service chooser to feed into socialauth_begin">Add a service?</a>{% endblocktrans %}</li>
     {% endif %}
     </ul>
 
 
-<h2>Your recipients</h2>
+<h2>{% trans "Your recipients" %}</h2>
 
-    <p>You have set up these recipients.  Each recipient can subscribe to different feeds, and you can customize how
-    your name and telephone number appears to each recipient.</p>
+    <p>{% blocktrans %}You have set up these recipients.  Each recipient can subscribe to different feeds, and you can customize how
+    your name and telephone number appears to each recipient.{% endblocktrans %}</p>
 
     <ul>
     {% if user.recipients.count %}
         {% for recipient in user.recipients.all %}
-        <li><a href="{% url 'recipient_detail' recipient.pk %}">{{ recipient.name }}</a>, added on {{ recipient.add_date }}
+        <li>
+            <a href="{% url 'recipient_detail' recipient.pk %}">
+                {% blocktrans with name=recipient.name date=recipient.add_date %}
+                    {{ name }}</a>, added on {{ date }}
+                {% endblocktrans %}
+        </li>
             <ul>
-                <li>Sees your name as {{ recipient.sender_name }} and your telephone number as {{ recipient.sender_phone }}.</li>
-                <li>Receives email at {{ recipient.email }}</li>
-                <li>Subscriptions:
+                <li>{% blocktrans with name=recipient.sender_name phone=recipient.sender_phone %}
+                    Sees your name as {{ name }} and your telephone number as {{ phone }}.
+                {% endblocktrans %}</li>
+                <li>{% blocktrans with email=recipient.email %}
+                    Receives email at {{ email }}
+                {% endblocktrans %}</li>
+                <li>{% trans "Subscriptions:" %}
                     <ul>
                     {% if recipient.subscriptions %}
-                        <li>Recipient has subscriptions set up. @todo include list template here.</li>
-                        <li><a href="{% url 'subscription_create_tumblr' %}">Add another subscription?</a></li>
+                        <li>{% blocktrans %}Recipient has subscriptions set up. @todo include list template here.{% endblocktrans %}</li>
+                        <li><a href="{% url 'subscription_create_tumblr' %}">{% trans "Add another subscription?" %}</a></li>
                     {% else %}
-                        <li>Recipient has no subscriptions set up. <a href="{% url 'subscription_create_tumblr' %}">Add some?</a></li>
+                        <li>{% trans "Recipient has no subscriptions set up." %} <a href="{% url 'subscription_create_tumblr' %}">{% trans "Add some?" context "add some subscriptions?" %}</a></li>
                     {% endif %}
                     </ul>
                 </li>
             </ul>
         </li>
         {% endfor %}
-        <li><a href="{% url 'recipient_create' %}">Add another recipient?</a></li>
+        <li><a href="{% url 'recipient_create' %}">{% trans "Add another recipient?" %}</a></li>
     {% else %}
-        <li>You have no recipients set up. <a href="{% url 'recipient_create' %}">Add some recipients?</a></li>
+        <li>{% trans "You have no recipients set up." %} <a href="{% url 'recipient_create' %}">{% trans "Add some recipients?" %}</a></li>
     {% endif %}
     </ul>
 {% endblock %}
