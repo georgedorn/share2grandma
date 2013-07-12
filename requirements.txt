@@ -5,4 +5,4 @@ django-braces==1.0.0
 -e git://github.com/tumblr/pytumblr.git#egg=PyTumblr-dev
 -e git://github.com/georgedorn/django-registration.git#egg=django_registration-dev
 py-bcrypt==0.3
-#touch
+django-timezone-field==0.4

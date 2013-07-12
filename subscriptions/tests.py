@@ -1,11 +1,19 @@
+from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.utils import timezone as dutz
 
-from .models import TumblrSubscription
-from .forms import TumblrSubscriptionForm
-
+from .models import TumblrSubscription, Recipient, Vacation
+from .forms import TumblrSubscriptionForm, RecipientForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
+import pytz
+
+def fixed_now():
+    """
+    Returns a constant datetime object, instead of now().
+    """
+    return datetime(2012, 12, 12)
 
 
 class TumblrSubscriptionProcessorTest(TestCase):
@@ -15,7 +23,10 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('derplord')
-        self.subscription = TumblrSubscription(user=self.user,
+        self.recipient = Recipient.objects.create(user=self.user,
+                                                  name='granny',
+                                                  email='mams@aol.com')
+        self.subscription = TumblrSubscription(recipient=self.recipient,
                                                short_name='demo')
         self.tumblr = TumblrSubscriptionProcessor(self.subscription)
 
@@ -29,7 +40,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
 
     def test_instantiate_badblog(self):
-        my_subscription = TumblrSubscription(user=self.user,
+        my_subscription = TumblrSubscription(recipient=self.recipient,
                                              short_name='zmxmdmcnnjjncn')
         caught = False
         try:
@@ -53,19 +64,27 @@ class TumblrSubscriptionProcessorTest(TestCase):
     def test_mangle(self):
         # @todo
         pass
-
-
-class TumblrSubscriptionTest(TestCase):
-    """
-    http://demo.tumblr.com/ is the 'fixture' in this case
-    """
-
+    
+    
+class SubscriptionTestCase(TestCase):
     def setUp(self):
         self.userdata = {'username':'xenuuu',
                          'password':'test_pass'}
         self.user = User.objects.create_user(**self.userdata)
         self.user = User.objects.get_by_natural_key('xenuuu')
 
+        self.recipient = Recipient.objects.create(user=self.user,
+                                                  name='nan',
+                                                  email='elsa@yahoo.com')
+
+
+
+class TumblrSubscriptionTest(SubscriptionTestCase):
+    """
+    http://demo.tumblr.com/ is the 'fixture' in this case
+    """
+    def setUp(self):
+        super(TumblrSubscriptionTest, self).setUp()
         self.login_url = reverse('auth_login')
         self.url_subscription_create_tumblr = reverse('subscription_create_tumblr')
 
@@ -98,11 +117,13 @@ class TumblrSubscriptionTest(TestCase):
 
         res = self.client.post(self.url_subscription_create_tumblr,
             {'user':self.user.pk,
+             'recipient':self.recipient.pk,
              'short_name':'demo',
              'enabled':True},
             follow=True)
 
-        obj = TumblrSubscription.objects.get(short_name='demo', user=self.user)
+        # @todo temp broken
+        obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
 
         success = False
@@ -119,7 +140,7 @@ class TumblrSubscriptionTest(TestCase):
         self.assertTrue(self.user.username in res.rendered_content)
 
     def test_delete_subscription(self):
-        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
         sub_all = TumblrSubscription.objects.all()
@@ -134,7 +155,7 @@ class TumblrSubscriptionTest(TestCase):
         self.assertEqual(result, 0)
 
     def test_delete_subscription_via_url(self):
-        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
         subscription = TumblrSubscription.objects.get(pk=subscription.pk)
@@ -161,10 +182,10 @@ class TumblrSubscriptionTest(TestCase):
         self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
 
     def test_login_require(self):
-        subscription = TumblrSubscription(short_name='demo', user=self.user)
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
-        obj = TumblrSubscription.objects.get(short_name='demo', user=self.user)
+        obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
 
         pages = [reverse('subscription_create_tumblr'), reverse('subscription_delete_tumblr', kwargs={'pk':obj.pk}),
@@ -181,3 +202,215 @@ class TumblrSubscriptionTest(TestCase):
             self.assertTrue(success)
 
 
+
+class RecipientTest(TestCase):
+    """
+    http://demo.tumblr.com/ is the 'fixture' in this case
+    """
+
+    def setUp(self):
+        self.userdata = {'username':'xenuuu',
+                         'password':'test_pass'}
+        self.user = User.objects.create_user(**self.userdata)
+        self.user = User.objects.get_by_natural_key('xenuuu')
+
+        self.recipient = Recipient.objects.create(user=self.user,
+                                                  name='nan',
+                                                  email='elsa@yahoo.com')
+
+        self.login_url = reverse('auth_login')
+        self.url_recipient_create = reverse('recipient_create')
+
+
+    def test_create_recipient_form_exists(self):
+        """
+        Test that the form is there and non-500, etc
+        """
+        self.client.login(**self.userdata)
+
+        res = self.client.get(self.url_recipient_create)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.context[0].has_key('form'))
+        self.assertTrue(isinstance(res.context[0].get('form'), RecipientForm))
+
+
+    def test_create_recipient_via_ui(self):
+        """
+        Use the create form and test that it works right.
+        """
+        self.client.login(**self.userdata)
+
+        granny_data = \
+            {'user':self.user.pk,
+             'sender_name':'bobby',
+             'sender_phone':'111-222-3344',
+             'name':'Granny Em',
+             'email':'emgran@aol.com',
+             'timezone':'America/Indiana/Knox'
+             }
+
+        res = self.client.post(self.url_recipient_create,
+            granny_data,
+            follow=True)
+
+        self.assertTrue(Recipient.objects.count() == 2)  # includes fixture
+
+        obj = Recipient.objects.get(name='Granny Em')
+        self.assertTrue(isinstance(obj, Recipient))
+
+        success = False
+        for url, status in res.redirect_chain:
+            if reverse('recipient_detail', kwargs={'pk':obj.pk}) in url:
+                if status >= 301 and status <= 302:
+                    # this redirect chain is a bit weird and might change, so be flexible..
+                    # we got redirected to the detail url for what we just created, so yay
+                    success = True
+        self.assertTrue(success)
+
+        granny_data.pop('user')     # not looking for pk in output
+        self.assertTrue(self.user.username in res.rendered_content)
+
+        for s in granny_data.values():
+            self.assertTrue(s in res.rendered_content,
+                            'Expected "%s" in rendered_content' % s)
+
+
+    def test_delete(self):
+        """
+        Delete a Recipient object directly
+        """
+        self.assertTrue(self.user.recipients.count() == 1)
+        self.recipient.delete()
+        self.assertTrue(self.user.recipients.count() == 0)
+
+
+    def test_delete_via_ui(self):
+        """
+        Delete a Recipient via the UI
+        """
+        # not yet implemented, different story
+        pass
+
+
+    def test_detail_view(self):
+        """
+        Test that the Recipient detail view displays the right stuff
+        """
+        self.client.login(**self.userdata)
+
+        res = self.client.get(reverse('recipient_detail', kwargs={'pk':self.recipient.pk}),
+            follow=True)
+
+        for field in self.recipient._meta.fields:
+            v = getattr(self.recipient, field.name)
+
+            if field.name == 'add_date':
+                v = v.strftime('%B %d, %Y')     # @todo: use whatever Django's using instead of hardcoding
+
+            self.assertTrue(str(v) in res.rendered_content,
+                            "Expected value '%s' for field '%s' in rendered content" % (v, field))
+
+
+    def test_dashboard_recipient_display(self):
+        """
+        Test that the Recipient shows up on the dashboard
+        """
+        self.client.login(**self.userdata)
+
+        res = self.client.get(reverse('dashboard_main'), follow=True)
+
+        for field in self.recipient._meta.fields:
+            v = getattr(self.recipient, field.name)
+
+            if field.name == 'add_date':
+                v = v.strftime('%B %d, %Y')     # @todo: use whatever Django's using instead of hardcoding
+            if field.name == 'timezone':
+                continue    # not currently displayed.
+
+            self.assertTrue(str(v) in res.rendered_content,
+                            "Expected value '%s' for field '%s' in rendered content" % (v, field))
+
+
+
+            
+class VacationTests(SubscriptionTestCase):
+    
+    def test_not_on_vacation(self):
+        self.assertFalse(self.recipient.is_on_vacation())
+
+    def test_is_on_vacation_obvious(self):
+        now = dutz.now()
+        last_week = now - timedelta(days=7)
+        next_week = now + timedelta(days=7)
+        Vacation.objects.create(recipient=self.recipient,
+                                start_date=last_week,
+                                end_date=next_week)
+        
+        self.assertTrue(self.recipient.is_on_vacation())
+
+    def test_is_not_on_vacation_timezone(self):
+        """
+        A test of an edge case where a recipient's vacation is in a different time zone than the server.
+        """
+        timezone = pytz.timezone('Europe/Amsterdam')
+        self.recipient.timezone = timezone
+        self.recipient.save()
+        now = datetime.now()
+        
+        #the trick here is that pytz.timezone.localize takes a naive datetime
+        #and appends a timezone without altering the datetime.
+        #e.g. if it is 8pm now in America/Los_Angeles,
+        #this results in a start of 6pm in Europe/Amsterdam
+        start = timezone.localize(now - timedelta(hours=2))
+        #and this would result in end of 10pm in Europe/Amsterdam
+        end = timezone.localize(now + timedelta(hours=2))
+        
+        Vacation.objects.create(recipient=self.recipient,
+                                start_date=start,
+                                end_date=end)
+        #Amsterdam is 8-9 hours ahead depending on DST, so this 4-hour vacation
+        #was actually over about 4 hours ago
+        self.assertFalse(self.recipient.is_on_vacation())
+        
+    def test_is_on_vacation_timezone(self):
+        """
+        Like previous test, create a vacation in another timezone, but
+        make it overlap the current time in the server's timezone.
+        """
+        timezone = pytz.timezone('Europe/Amsterdam') # 8-9 hours ahead
+        self.recipient.timezone = timezone
+        self.recipient.save()
+        
+        now = datetime.now()
+        
+        start = timezone.localize(now + timedelta(hours=6)) #less than 8-9 hours from now
+        end = timezone.localize(now + timedelta(hours=12))
+        
+        Vacation.objects.create(recipient=self.recipient,
+                                start_date=start,
+                                end_date=end
+                                )
+        self.assertTrue(self.recipient.is_on_vacation())
+                                
+
+    def test_stupid_vacation(self):
+        """
+        Ensure that creating a vacation without timezone info results
+        in using the recipient's timezone.
+        """
+        timezone = pytz.timezone('America/New_York')
+        self.recipient.timezone = timezone
+        self.recipient.save()
+        
+        start = datetime(year=2012, month=12, day=12, hour=12)
+        end = datetime(year=2012, month=12, day=14, hour=12)
+        
+        vacation = Vacation.objects.create(recipient=self.recipient,
+                                           start_date=start,
+                                           end_date=end)
+        
+        self.assertEqual(vacation.start_date.tzinfo,
+                         timezone)
+        self.assertEqual(vacation.end_date.tzinfo,
+                         timezone)

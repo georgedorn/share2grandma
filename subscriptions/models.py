@@ -1,17 +1,42 @@
+from datetime import datetime
 from django.db import models
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.forms import ModelForm
 from django.core.urlresolvers import reverse
+from django.utils import timezone
+from timezone_field import TimeZoneField
 
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
+import pytz
 
 class GenericSubscription(models.Model):
-    user = models.ForeignKey(User, related_name='subscriptions')
+    recipient = models.ForeignKey('Recipient', related_name='subscriptions')
     enabled = models.BooleanField(default=True)
     short_name = models.CharField(null=False, max_length=16)
     pretty_name = models.CharField(blank=True, max_length=80)
     avatar = models.TextField(null=True, blank=True)      # set to generic for subscriptions w/no avatar
+
+
+class Recipient(models.Model):
+    user = models.ForeignKey(User, related_name='recipients')
+    # the following can differ per recipient.  "bobby" vs "Robert" etc.
+    sender_name = models.CharField(null=False, blank=False, max_length=64)
+    # also variable by recipient
+    sender_phone = models.CharField(null=False, blank=False, max_length=20)
+    name = models.CharField(null=False, blank=False, max_length=64)
+    add_date = models.DateField(auto_now_add=True)
+    email = models.EmailField(null=False, blank=False)
+    timezone = TimeZoneField(default='America/Los_Angeles')
+
+    def get_absolute_url(self):
+        return reverse('recipient_detail', kwargs={'pk':self.pk})
+
+    def is_on_vacation(self):
+        now = timezone.now()
+        return Vacation.objects.filter(start_date__lt=now,
+                                       end_date__gt=now,
+                                       recipient=self).exists()
 
 
 class TumblrSubscription(GenericSubscription):
@@ -44,4 +69,19 @@ class TumblrSubscription(GenericSubscription):
         return "%s (Tumblr) sub for %s" % (self.short_name, self.user)
 
 admin.site.register(TumblrSubscription)
+
+
+
+class Vacation(models.Model):
+    recipient = models.ForeignKey(Recipient, related_name='vacations')
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    
+    def save(self, *args, **kwargs):
+        if timezone.is_naive(self.start_date):
+            self.start_date = timezone.make_aware(self.start_date, self.recipient.timezone)
+        if timezone.is_naive(self.end_date):
+            self.end_date = timezone.make_aware(self.end_date, self.recipient.timezone)
+            
+        return super(Vacation, self).save(*args, **kwargs)
 

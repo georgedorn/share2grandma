@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+{% trans "enter a recipient here" noop %}
+
+    <!-- @todo hardcoded url -->
+<form action="{% url 'recipient_create' %}" method="post">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Submit" />
+</form>
+{% endblock  %}
