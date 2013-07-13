@@ -24,7 +24,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('derplord')
         self.recipient = Recipient.objects.create(user=self.user,
-                                                  name='granny',
+                                                  name='Grrrranny',
                                                   email='mams@aol.com')
         self.subscription = TumblrSubscription(recipient=self.recipient,
                                                short_name='demo')
@@ -74,7 +74,7 @@ class SubscriptionTestCase(TestCase):
         self.user = User.objects.get_by_natural_key('xenuuu')
 
         self.recipient = Recipient.objects.create(user=self.user,
-                                                  name='nan',
+                                                  name='Nonna',
                                                   email='elsa@yahoo.com')
 
 
@@ -122,7 +122,6 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
              'enabled':True},
             follow=True)
 
-        # @todo temp broken
         obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
 
@@ -203,21 +202,13 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
 
 
 
-class RecipientTest(TestCase):
+class RecipientTest(SubscriptionTestCase):
     """
     http://demo.tumblr.com/ is the 'fixture' in this case
     """
 
     def setUp(self):
-        self.userdata = {'username':'xenuuu',
-                         'password':'test_pass'}
-        self.user = User.objects.create_user(**self.userdata)
-        self.user = User.objects.get_by_natural_key('xenuuu')
-
-        self.recipient = Recipient.objects.create(user=self.user,
-                                                  name='nan',
-                                                  email='elsa@yahoo.com')
-
+        super(RecipientTest, self).setUp()
         self.login_url = reverse('auth_login')
         self.url_recipient_create = reverse('recipient_create')
 
@@ -279,6 +270,7 @@ class RecipientTest(TestCase):
     def test_delete(self):
         """
         Delete a Recipient object directly
+        # @todo use this to test that recipient subscriptions and so on all go with?
         """
         self.assertTrue(self.user.recipients.count() == 1)
         self.recipient.delete()
