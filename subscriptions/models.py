@@ -1,14 +1,16 @@
-from datetime import datetime
+import base64
+import uuid
+
 from django.db import models
 from django.contrib import admin
-from django.contrib.auth.models import User
-from django.forms import ModelForm
 from django.core.urlresolvers import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
+
 from timezone_field import TimeZoneField
 
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
-import pytz
+
 
 class GenericSubscription(models.Model):
     recipient = models.ForeignKey('Recipient', related_name='subscriptions')
@@ -72,6 +74,18 @@ admin.site.register(TumblrSubscription)
 
 
 
+class DailyWakeupSubscription(GenericSubscription):
+    def get_absolute_url(self):
+        return reverse('subscription_detail_dailywakeup', kwargs={'pk':self.pk})
+
+    def __unicode__(self):
+        # so it's intelligible in the django admin
+        return "%s (DailyWakeup) sub for %s" % (self.short_name, self.user)
+
+admin.site.register(DailyWakeupSubscription)
+
+
+
 class Vacation(models.Model):
     recipient = models.ForeignKey(Recipient, related_name='vacations')
     start_date = models.DateTimeField()
@@ -85,3 +99,33 @@ class Vacation(models.Model):
             
         return super(Vacation, self).save(*args, **kwargs)
 
+
+# @todo a lot of random shit is getting dumped into subscriptions.models....
+class Profile(models.Model):
+    """
+    Extend User with moar information.
+    """
+    user = models.OneToOneField(User)
+    __s2g_email = models.EmailField(null=True)
+
+    @property
+    def s2g_email(self):
+        """
+        returns a static s2g email from self.__s2g_email or generates,
+        saves, then returns it if it doesn't exist.
+        """
+        if self.__s2g_email is None:
+            generated_okay = False
+
+            while not generated_okay:
+                u = uuid.uuid4()        # random
+                u = u.fields['node']    # 48 bits = 8 b64 chars
+                suffix = base64.b64encode(str(u), '-_')
+                email = "s2g%s" % suffix
+
+                if Profile.objects.count(__s2g_email=email) == 0:
+                    self.__s2g_email = email
+                    self.save()
+                    generated_okay = True
+
+        return self.__s2g_email
