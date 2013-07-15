@@ -100,7 +100,6 @@ class Vacation(models.Model):
         return super(Vacation, self).save(*args, **kwargs)
 
 
-
 # @todo a lot of random shit is getting dumped into subscriptions.models....
 class Profile(models.Model):
     """
