@@ -25,3 +25,10 @@ class GenericSubscriptionProcessor(object):
         """
         raise NotImplementedError
 
+
+    def get_dailywakeup_string(self):
+        """
+        If implemented, returns a short bit of content to add to
+        Daily Wakeup emails.
+        """
+        raise NotImplementedError
