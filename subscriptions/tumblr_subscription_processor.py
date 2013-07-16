@@ -21,7 +21,7 @@ class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
         self.tumblr_post_list = []
 
 
-    def get_blog_info(self):
+    def setup_subscription(self):
         """
         Get info about the blog from Tumblr
         """
@@ -39,7 +39,7 @@ class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
         return info
 
 
-    def grab(self):
+    def pull_content(self):
         """
         Fill self.tumblr_post_list with posts
         """
@@ -64,7 +64,7 @@ class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
                     self.tumblr_post_list.append(post)
 
 
-    def mangle(self):
+    def transform_content_longform(self):
         """
         Process the contents of self.tumblr_post_list and return as list
         """

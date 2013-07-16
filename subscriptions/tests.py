@@ -32,7 +32,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
 
     def test_get_blog_info(self):
-        info = self.tumblr.get_blog_info()
+        info = self.tumblr.setup_subscription()
 
         self.assertTrue('default_avatar' in info['avatar'])
         self.assertEqual('Demo', info['pretty_name'])

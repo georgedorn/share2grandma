@@ -4,21 +4,21 @@ class GenericSubscriptionProcessor(object):
     methods below.
     """
 
-    def get_blog_info(self):
+    def setup_subscription(self):
         """
         Run when the user first sets up this subscription.
         """
         raise NotImplementedError
 
 
-    def grab(self):
+    def pull_content(self):
         """
         Pulls data from the subscription and stores it in this object
         """
         raise NotImplementedError
 
 
-    def mangle(self):
+    def transform_content_longform(self):
         """
         Transforms pulled data to a format we like, so we can send it.
         returns string?
@@ -26,7 +26,7 @@ class GenericSubscriptionProcessor(object):
         raise NotImplementedError
 
 
-    def get_dailywakeup_string(self):
+    def transform_content_shortform(self):
         """
         If implemented, returns a short bit of content to add to
         Daily Wakeup emails.
