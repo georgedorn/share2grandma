@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+    <p>{% blocktrans with name=object.recipient.name start=object.start_date end=object.end_date %}Are you sure you want to delete {{ name }}'s vacation from {{start}} to {{end}}?
+       {% endblocktrans %}</p>
+    <form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Delete" />
+    </form>
+    <a href="{% url 'dashboard_main' %}">{% trans "Cancel" noop %}</a>
+{% endblock %}

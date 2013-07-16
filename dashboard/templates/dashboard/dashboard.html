@@ -64,6 +64,30 @@
                 <li>{% blocktrans with name=recipient.sender_name phone=recipient.sender_phone %}
                     Sees your name as {{ name }} and your telephone number as {{ phone }}.
                 {% endblocktrans %}</li>
+				<li>
+					{% if recipient.is_on_vacation %}
+					{% with recipient.get_current_vacation as vacation %}
+					{% url 'vacation_cancel' pk=vacation.pk as cancel_url %}
+					{% blocktrans with start=vacation.start_date end=vacation.end_date %}
+					On vacation from {{ start }} to {{ end }} and won't receive items.
+					<a href="{{cancel_url}}">Cancel?</a>
+					{% endblocktrans %} 
+					{% endwith %}
+					{% endif %}
+					<ul id='upcoming_vacations'>
+					{% for vacation in recipient.get_upcoming_vacations %}
+					<li>
+					{% url 'vacation_cancel' pk=vacation.pk as cancel_url %}					
+					{% blocktrans with start=vacation.start_date end=vacation.end_date %}
+					Has an upcoming vacation from {{start}} to {{end}}.  <a href="{{cancel_url}}">Cancel?</a>
+					{% endblocktrans %}</li>
+					{% endfor %}	
+					<li><a href="{% url 'vacation_create' recipient_id=recipient.pk %}">{% blocktrans %}Create a vacation?{% endblocktrans %}</a></li>
+					</ul>
+				</li>
+				
+					
+				
                 <li>{% blocktrans with email=recipient.email %}
                     Receives email at {{ email }}
                 {% endblocktrans %}</li>
