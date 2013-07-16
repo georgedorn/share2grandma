@@ -10,24 +10,15 @@ class DailyWakeupSubscriptionProcessor(GenericSubscriptionProcessor):
         self.recipient_subs = self.recipient.subscriptions.filter(enabled=True)
 
 
-    def setup_subscription(self):
-        """
-        Get info about the blog from Tumblr
-        """
-        info = {}
-        return info
-
-
     def pull_content(self):
         """
-        Fill self.tumblr_post_list with posts
+        Generate message here based on time, time zone, etc.
         """
         raise NotImplementedError
 
 
-    def transform_content_longform(self):
+    def transform_content_shortform(self):
         """
-        Process the contents of self.tumblr_post_list and return as list
+        Return for DailyWakeup
         """
         raise NotImplementedError
-
