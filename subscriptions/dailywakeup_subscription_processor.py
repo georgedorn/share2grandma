@@ -9,3 +9,16 @@ class DailyWakeupSubscriptionProcessor(GenericSubscriptionProcessor):
         self.recipient = self.subscription.recipient
         self.recipient_subs = self.recipient.subscriptions.filter(enabled=True)
 
+
+    def pull_content(self):
+        """
+        Generate message here based on time, time zone, etc.
+        """
+        raise NotImplementedError
+
+
+    def transform_content_shortform(self):
+        """
+        Return for DailyWakeup
+        """
+        raise NotImplementedError
