@@ -33,10 +33,23 @@ class Recipient(models.Model):
         return reverse('recipient_detail', kwargs={'pk':self.pk})
 
     def is_on_vacation(self):
+        if self.get_current_vacation():
+            return True
+        return False
+    
+    def get_current_vacation(self):
         now = timezone.now()
-        return Vacation.objects.filter(start_date__lt=now,
+        vacations = Vacation.objects.filter(start_date__lt=now,
                                        end_date__gt=now,
-                                       recipient=self).exists()
+                                       recipient=self)
+        if vacations:
+            return vacations[0]
+        return None
+    
+    def get_upcoming_vacations(self):
+        now = timezone.now()
+        return Vacation.objects.filter(start_date__gt=now,
+                                       recipient=self).order_by('start_date')
 
 
 class TumblrSubscription(GenericSubscription):

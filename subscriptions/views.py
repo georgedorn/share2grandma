@@ -70,6 +70,10 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
         context['timezone_simple'] = recipient.timezone.tzname(datetime.now(), is_dst=False)
         
         return context
+    
+class VacationDeleteView(LoginRequiredMixin, DeleteView):
+    model = Vacation
+    success_url = reverse_lazy('dashboard_main')
         
     
     
