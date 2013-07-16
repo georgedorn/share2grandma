@@ -46,7 +46,7 @@ class TumblrSubscription(GenericSubscription):
 
     def update_from_tumblr(self, save=False):
         processor = TumblrSubscriptionProcessor(self)
-        info = processor.get_blog_info()
+        info = processor.setup_subscription()
 
         self.avatar = info['avatar']
         self.pretty_name = info['pretty_name']
@@ -98,6 +98,7 @@ class Vacation(models.Model):
             self.end_date = timezone.make_aware(self.end_date, self.recipient.timezone)
             
         return super(Vacation, self).save(*args, **kwargs)
+
 
 
 # @todo a lot of random shit is getting dumped into subscriptions.models....
