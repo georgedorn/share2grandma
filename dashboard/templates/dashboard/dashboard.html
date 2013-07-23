@@ -81,13 +81,11 @@
 					{% blocktrans with start=vacation.start_date end=vacation.end_date %}
 					Has an upcoming vacation from {{start}} to {{end}}.  <a href="{{cancel_url}}">Cancel?</a>
 					{% endblocktrans %}</li>
+					{% empty %}<li>No future vacations scheduled.</li>
 					{% endfor %}	
 					<li><a href="{% url 'vacation_create' recipient_id=recipient.pk %}">{% blocktrans %}Create a vacation?{% endblocktrans %}</a></li>
 					</ul>
 				</li>
-				
-					
-				
                 <li>{% blocktrans with email=recipient.email %}
                     Receives email at {{ email }}
                 {% endblocktrans %}</li>
