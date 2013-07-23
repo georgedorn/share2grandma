@@ -78,7 +78,6 @@ class SubscriptionTestCase(TestCase):
                                                   email='elsa@yahoo.com')
 
 
-
 class TumblrSubscriptionTest(SubscriptionTestCase):
     """
     http://demo.tumblr.com/ is the 'fixture' in this case
@@ -93,6 +92,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         not via UI
         """
         subscription = TumblrSubscription(short_name='demo')
+        subscription.recipient = self.recipient
 
         subscription.update_from_tumblr()
 

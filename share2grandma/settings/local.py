@@ -27,6 +27,10 @@ DATABASES = {
                          }
              }
 
+# Maybe???
+# SOUTH_TESTS_MIGRATE = bool(os.environ.get('SOUTH_TESTS_MIGRATE', True))
+# SKIP_SOUTH_TESTS = os.environ.get('SKIP_SOUTH_TESTS', True)
+
 #These tumblr keys point to a demo app.  It redirects to localhost:8000.  Use in dev mode.
 TUMBLR_CONSUMER_KEY = 'PsbqraXHdjAOpHf31vJ7fa4UIyUTeRwVlX3AxUOmtwqHQWZgbh'
 TUMBLR_API_KEY = TUMBLR_CONSUMER_KEY

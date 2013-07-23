@@ -6,7 +6,8 @@ from django.conf import settings
 
 class TumblrSubscriptionProcessor(GenericSubscriptionProcessor):
     def __init__(self, subscription=None):
-        self.subscription = subscription
+        super(TumblrSubscriptionProcessor, self).__init__(subscription)
+
         self.client = TumblrRestClient(consumer_key=settings.TUMBLR_API_KEY)
         blog_info_raw = self.client.blog_info(subscription.short_name)
 

@@ -1,14 +1,26 @@
 class GenericSubscriptionProcessor(object):
     """
-    This is the interface for subscriptions.  They must all have the
+    This is the interface for subscriptions.  They must have the
     methods below.
     """
+
+    def __init__(self, subscription=None):
+        """
+        Constructor.
+
+        Args:
+            subscription: something that quacks like a GenericSubscription
+        """
+        self.subscription = subscription
+        self.recipient = self.subscription.recipient
+
 
     def setup_subscription(self):
         """
         Run when the user first sets up this subscription.
 
-        Return: dict of crap expected by convention by caller, or None.
+        Returns:
+            dict of crap expected by convention by caller, or None.
         """
         return None
 
@@ -17,7 +29,8 @@ class GenericSubscriptionProcessor(object):
         """
         Pulls data from the subscription and stores it in this object
 
-        Return: int Number of items stored, total
+        Returns:
+            int Number of items stored, total.
         """
         return 0
 
@@ -26,17 +39,26 @@ class GenericSubscriptionProcessor(object):
         """
         Transforms pulled data to a long, full-email format we like, so we can send it.
 
-        Returns a list of strings, one for each object that should be dispatched, or None.
+        Returns:
+            A list of strings, one for each object that should be dispatched, or None.
         """
         return None
 
 
-    def transform_content_shortform(self):
+    def transform_content_shortform(self, max=3):
         """
         Transforms pulled data to a short format we can add to DailyWakeups.
 
-        Returns a list of strings, or None.  Default is to return None (i.e., you must
-        override this in subclasses or they won't contribute to DailyWakeup -
-        and that's pretty common - this will be rarely overridden.)
+        Args:
+            max: int, the max number of items that should be returned.  Defaults
+                to 3.  The caller may lower this if DailyWakeup is getting too
+                full.  Subclasses are responsible for returning the most important
+                items if there is any sense of importance.  Will never be lower than
+                1.
+
+        Returns:
+            A list of strings, or None.  Default is to return None (i.e., you must
+            override this in subclasses or they won't contribute to DailyWakeup -
+            and that's pretty common - this will be rarely overridden.)
         """
         return None
