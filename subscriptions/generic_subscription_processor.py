@@ -31,6 +31,9 @@ class GenericSubscriptionProcessor(object):
 
         Returns:
             int Number of items stored, total.
+
+        Raises:
+            @todo some shit when it can't pull content
         """
         return 0
 
@@ -41,6 +44,9 @@ class GenericSubscriptionProcessor(object):
 
         Returns:
             A list of strings, one for each object that should be dispatched, or None.
+
+        Raises:
+            @todo some shit when it couldn't pull content
         """
         return None
 
@@ -60,5 +66,8 @@ class GenericSubscriptionProcessor(object):
             A list of strings, or None.  Default is to return None (i.e., you must
             override this in subclasses or they won't contribute to DailyWakeup -
             and that's pretty common - this will be rarely overridden.)
+
+        Raises:
+            @todo some shit when it couldn't pull content
         """
         return None

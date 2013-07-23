@@ -30,6 +30,7 @@ class Recipient(models.Model):
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
+    # @todo wakeup / postcode field here - https://github.com/mthornhill/django-postal -- for DailyWakeup weather
 
     def get_absolute_url(self):
         return reverse('recipient_detail', kwargs={'pk':self.pk})
