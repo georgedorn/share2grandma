@@ -112,11 +112,14 @@ class Vacation(models.Model):
     end_date = models.DateTimeField()
     
     def save(self, *args, **kwargs):
+        """
+        Last-ditch effort to ensure that start/end dates have the right timezones,
+        namely that of their recipients.
+        """
         if timezone.is_naive(self.start_date):
             self.start_date = timezone.make_aware(self.start_date, self.recipient.timezone)
         if timezone.is_naive(self.end_date):
             self.end_date = timezone.make_aware(self.end_date, self.recipient.timezone)
-            
         return super(Vacation, self).save(*args, **kwargs)
 
 
