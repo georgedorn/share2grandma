@@ -67,6 +67,10 @@ class TumblrSubscription(GenericSubscription):
     last_post_ts = models.BigIntegerField(null=True, blank=True)
 
     def update_from_tumblr(self, save=False):
+        """
+        @todo this should probably be named something that doesn't imply that it's
+        updating *content*, because it isn't.
+        """
         processor = TumblrSubscriptionProcessor(self)
         info = processor.setup_subscription()
 
