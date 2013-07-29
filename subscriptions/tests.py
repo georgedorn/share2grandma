@@ -1,4 +1,6 @@
+import re
 from datetime import datetime, timedelta
+
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
@@ -32,7 +34,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
 
     def test_get_blog_info(self):
-        info = self.tumblr.get_blog_info()
+        info = self.tumblr.setup_subscription()
 
         self.assertTrue('default_avatar' in info['avatar'])
         self.assertEqual('Demo', info['pretty_name'])
@@ -51,20 +53,36 @@ class TumblrSubscriptionProcessorTest(TestCase):
         self.assertTrue(caught, "Didn't catch expected exception with bad blog name.")
 
 
-    def test_grab(self):
+    def test_num_items_stored(self):
         # @todo
-        pass
+        raise self.skipTest('write me')
 
 
-    def test_grab_no_new_posts(self):
+    def test_pull_content(self):
         # @todo
-        pass
+        raise self.skipTest('write me')
 
 
-    def test_mangle(self):
+    def test_pull_content_no_new_posts(self):
         # @todo
-        pass
-    
+        raise self.skipTest('write me')
+
+
+    def test_transform_content_longform(self):
+        # @todo
+        raise self.skipTest('write me')
+
+
+    def test_transform_content_shortform(self):
+        # @todo
+        raise self.skipTest('write me')
+
+
+    def test_transform_content_shortform_low_max(self):
+        # @todo
+        raise self.skipTest('write me')
+
+
     
 class SubscriptionTestCase(TestCase):
     def setUp(self):
@@ -75,8 +93,25 @@ class SubscriptionTestCase(TestCase):
 
         self.recipient = Recipient.objects.create(user=self.user,
                                                   name='Nonna',
-                                                  email='elsa@yahoo.com')
+                                                  email='elsa@yahoo.com',
+                                                  postcode='02540')
 
+
+class ProfileTestCase(SubscriptionTestCase):
+    """
+    Test the extended user profile and whatnot.
+    """
+    def test_model_save_email_gen(self):
+        """
+        in setUp(), this should have fired.
+        """
+        pattern = r's2g_[a-zA-Z0-9_\-]{8}'
+        self.assertTrue(re.match(pattern, self.user.s2g_profile.s2g_email),
+                        'expected s2g email s2g + 8 random chars but got: %s' % self.user.s2g_profile.s2g_email)
+
+    def test_email_visible(self):
+        # @todo
+        self.skipTest('write me')
 
 
 class TumblrSubscriptionTest(SubscriptionTestCase):
@@ -93,6 +128,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         not via UI
         """
         subscription = TumblrSubscription(short_name='demo')
+        subscription.recipient = self.recipient
 
         subscription.update_from_tumblr()
 
@@ -124,6 +160,9 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
 
         obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
+        self.assertEqual(obj.num_borked_calls, 0)
+        self.assertEqual(obj.first_borked_call_time, None)
+        self.assertFalse(obj.appears_broken)
 
         success = False
         for url, status in res.redirect_chain:

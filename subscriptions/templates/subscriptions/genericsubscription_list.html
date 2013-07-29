@@ -17,6 +17,9 @@
             <dd>{{ subscription.pretty_name }}</dd>
             <dt>{% trans "Avatar" noop %}</dt>
             <dd><img src="{{ subscription.avatar }}"></dd>
+            <dd>{% trans "Borkedness" %}</dd>
+            <dt>{% blocktrans with calls=subscription.number_borked_calls dt=subscription.first_borked_call_time %}
+                {{ calls }} borked calls since {{ dt }}{% endblocktrans %}</dt>
         </a>
         {% endfor %}
 
