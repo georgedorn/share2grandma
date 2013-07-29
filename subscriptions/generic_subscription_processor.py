@@ -31,6 +31,10 @@ class GenericSubscriptionProcessor(object):
 
         Returns:
             dict of crap expected by convention by caller, or None.
+
+        Raises:
+            BorkedServiceException when the service is borked.
+            BrokenServiceException when the service appears to need user intervention to return to a working state.
         """
         return None
 
