@@ -44,10 +44,23 @@ class Recipient(models.Model):
         return reverse('recipient_detail', kwargs={'pk':self.pk})
 
     def is_on_vacation(self):
+        if self.get_current_vacation():
+            return True
+        return False
+    
+    def get_current_vacation(self):
         now = timezone.now()
-        return Vacation.objects.filter(start_date__lt=now,
+        vacations = Vacation.objects.filter(start_date__lt=now,
                                        end_date__gt=now,
-                                       recipient=self).exists()
+                                       recipient=self)
+        if vacations:
+            return vacations[0]
+        return None
+    
+    def get_upcoming_vacations(self):
+        now = timezone.now()
+        return Vacation.objects.filter(start_date__gt=now,
+                                       recipient=self).order_by('start_date')
 
 
 class TumblrSubscription(GenericSubscription):
@@ -82,7 +95,6 @@ class TumblrSubscription(GenericSubscription):
 admin.site.register(TumblrSubscription)
 
 
-
 class DailyWakeupSubscription(GenericSubscription):
     def get_absolute_url(self):
         return reverse('subscription_detail_dailywakeup', kwargs={'pk':self.pk})
@@ -94,20 +106,21 @@ class DailyWakeupSubscription(GenericSubscription):
 admin.site.register(DailyWakeupSubscription)
 
 
-
 class Vacation(models.Model):
     recipient = models.ForeignKey(Recipient, related_name='vacations')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     
     def save(self, *args, **kwargs):
+        """
+        Last-ditch effort to ensure that start/end dates have the right timezones,
+        namely that of their recipients.
+        """
         if timezone.is_naive(self.start_date):
             self.start_date = timezone.make_aware(self.start_date, self.recipient.timezone)
         if timezone.is_naive(self.end_date):
             self.end_date = timezone.make_aware(self.end_date, self.recipient.timezone)
-            
         return super(Vacation, self).save(*args, **kwargs)
-
 
 
 # @todo a lot of random shit is getting dumped into subscriptions.models....

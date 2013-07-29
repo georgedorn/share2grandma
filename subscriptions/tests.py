@@ -7,16 +7,10 @@ from django.test import TestCase
 from django.utils import timezone as dutz
 
 from .models import TumblrSubscription, Recipient, Vacation
-from .forms import TumblrSubscriptionForm, RecipientForm
+from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
-
-def fixed_now():
-    """
-    Returns a constant datetime object, instead of now().
-    """
-    return datetime(2012, 12, 12)
-
+from subscriptions.forms import VacationForm
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
@@ -240,7 +234,6 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
             self.assertTrue(success)
 
 
-
 class RecipientTest(SubscriptionTestCase):
     """
     http://demo.tumblr.com/ is the 'fixture' in this case
@@ -363,8 +356,6 @@ class RecipientTest(SubscriptionTestCase):
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
 
-
-            
 class VacationTests(SubscriptionTestCase):
     
     def test_not_on_vacation(self):
@@ -441,7 +432,94 @@ class VacationTests(SubscriptionTestCase):
                                            start_date=start,
                                            end_date=end)
         
-        self.assertEqual(vacation.start_date.tzinfo,
-                         timezone)
-        self.assertEqual(vacation.end_date.tzinfo,
-                         timezone)
+        self.assertEqual(vacation.start_date.tzinfo, timezone)
+        self.assertEqual(vacation.end_date.tzinfo, timezone)
+        
+    def test_bad_vacation_form(self):
+        """
+        Submitting a vacation form where the start date is after the end date is an error.
+        """
+        start = dutz.now().today()
+        end = start - timedelta(days=1)
+        data = {'start_date': start.strftime('%Y-%m-%d'),
+                'end_date': end.strftime('%Y-%m-%d')}
+        form = VacationForm(data)
+        self.assertFalse(form.is_valid())
+        
+    def test_delete_future_vacation(self):
+        """
+        Cancelling a future vacation that has not yet started is fine,
+        just delete it.
+        """
+        self.client.login(**self.userdata)
+        start = dutz.now() + timedelta(days=1)
+        end = start + timedelta(weeks=1)
+        vacation = Vacation.objects.create(recipient=self.recipient,
+                                           start_date=start,
+                                           end_date=end
+                                           )
+        
+        url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
+        self.client.post(url)
+        
+        self.assertRaises(Vacation.DoesNotExist, Vacation.objects.get, pk=vacation.pk)
+    
+    def test_delete_started_vacation(self):
+        """
+        Cancelling a vacation that's already started actually sets 
+        the end date to now, not actually deleting it.
+        """
+        self.client.login(**self.userdata)
+        start = dutz.now() - timedelta(days=2) #started yesterday
+        end = start + timedelta(days=7)
+        vacation = Vacation.objects.create(recipient=self.recipient,
+                                           start_date=start,
+                                           end_date=end
+                                           )
+        
+        url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
+        self.client.post(url)
+        vacation = Vacation.objects.get(pk=vacation.pk) #reload
+        self.assertTrue(vacation.end_date <= dutz.now())
+
+    def test_delete_somebody_elses_vacation(self):
+        """
+        Users shouldn't be able to delete vacations belonging to other users.
+        """
+        new_user = User.objects.create_user("new_user", password='new_pass')
+        new_recipient = Recipient.objects.create(user=new_user,
+                                                  name='Nanna',
+                                                  email='elsie@yahoo.com')
+
+        #this vacation starts and ends in the future, so it can be deleted and not just trigger
+        #the end_date change.
+        vacation = Vacation.objects.create(recipient=new_recipient,
+                                           start_date=dutz.now() + timedelta(days=1),
+                                           end_date=dutz.now() + timedelta(weeks=4))
+        url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
+        
+        self.client.login(**self.userdata) #login as self.user, NOT new_user
+        
+        #try to delete vacation belonging to new_user
+        res = self.client.post(url)
+        vacation = Vacation.objects.get(pk=vacation.pk) #force reload, should still exist
+
+    def test_create_somebody_elses_vacation(self):
+        new_user = User.objects.create_user("new_user", password='new_pass')
+        new_recipient = Recipient.objects.create(user=new_user,
+                                                  name='Nanna',
+                                                  email='elsie@yahoo.com')
+
+        self.client.login(**self.userdata)
+        url = reverse('vacation_create', kwargs={'recipient_id': new_recipient.pk})
+        
+        start = dutz.now().today()
+        end = start - timedelta(days=1)
+        data = {'start_date': start.strftime('%Y-%m-%d'),
+                'end_date': end.strftime('%Y-%m-%d')}
+        
+        res = self.client.post(url, data)
+        self.assertEqual(res.status_code, 404) #can't do that
+        
+        
+
