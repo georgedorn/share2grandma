@@ -14,7 +14,7 @@ class TumblrSubscriptionForm(forms.ModelForm):
 class RecipientForm(forms.ModelForm):
     class Meta:
         model = Recipient
-        fields = ('user', 'sender_name', 'sender_phone', 'name', 'email', 'timezone')
+        fields = ('sender', 'sender_name', 'sender_phone', 'name', 'email', 'timezone')
 
 class VacationForm(forms.ModelForm):
     start_date = forms.DateTimeField(widget=AdminDateWidget())

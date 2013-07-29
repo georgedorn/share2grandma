@@ -19,7 +19,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user('derplord')
-        self.recipient = Recipient.objects.create(user=self.user,
+        self.recipient = Recipient.objects.create(sender=self.user,
                                                   name='Grrrranny',
                                                   email='mams@aol.com')
         self.subscription = TumblrSubscription(recipient=self.recipient,
@@ -85,7 +85,7 @@ class SubscriptionTestCase(TestCase):
         self.user = User.objects.create_user(**self.userdata)
         self.user = User.objects.get_by_natural_key('xenuuu')
 
-        self.recipient = Recipient.objects.create(user=self.user,
+        self.recipient = Recipient.objects.create(sender=self.user,
                                                   name='Nonna',
                                                   email='elsa@yahoo.com',
                                                   postcode='02540')
@@ -146,7 +146,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.client.login(**self.userdata)
 
         res = self.client.post(self.url_subscription_create_tumblr,
-            {'user':self.user.pk,
+            {'    ':self.user.pk,
              'recipient':self.recipient.pk,
              'short_name':'demo',
              'enabled':True},
@@ -265,7 +265,7 @@ class RecipientTest(SubscriptionTestCase):
         self.client.login(**self.userdata)
 
         granny_data = \
-            {'user':self.user.pk,
+            {'sender':self.user.pk, #@todo: Sender is not posted, should be in request
              'sender_name':'bobby',
              'sender_phone':'111-222-3344',
              'name':'Granny Em',
@@ -291,7 +291,7 @@ class RecipientTest(SubscriptionTestCase):
                     success = True
         self.assertTrue(success)
 
-        granny_data.pop('user')     # not looking for pk in output
+        granny_data.pop('sender')     # not looking for pk in output
         self.assertTrue(self.user.username in res.rendered_content)
 
         for s in granny_data.values():
@@ -487,7 +487,7 @@ class VacationTests(SubscriptionTestCase):
         Users shouldn't be able to delete vacations belonging to other users.
         """
         new_user = User.objects.create_user("new_user", password='new_pass')
-        new_recipient = Recipient.objects.create(user=new_user,
+        new_recipient = Recipient.objects.create(sender=new_user,
                                                   name='Nanna',
                                                   email='elsie@yahoo.com')
 
@@ -506,7 +506,7 @@ class VacationTests(SubscriptionTestCase):
 
     def test_create_somebody_elses_vacation(self):
         new_user = User.objects.create_user("new_user", password='new_pass')
-        new_recipient = Recipient.objects.create(user=new_user,
+        new_recipient = Recipient.objects.create(sender=new_user,
                                                   name='Nanna',
                                                   email='elsie@yahoo.com')
 
