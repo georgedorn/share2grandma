@@ -99,8 +99,7 @@ class RegistrationTestCase(TestCase):
         registration_complete_url = reverse('registration_activate', 
                                             kwargs={'activation_key': profile.activation_key})
         
-        res = self.client.get(registration_complete_url)
-        
+        res = self.client.get(registration_complete_url, follow=True)
         user = User.objects.get(pk=user.pk) #reload user
         self.assertTrue(user.is_active)
         
