@@ -115,7 +115,7 @@ class Profile(models.Model):
     """
     Extend User with moar information.
     """
-    user = models.OneToOneField(User, related_name='profile')
+    user = models.OneToOneField(User, related_name='s2g_profile')
     s2g_email = models.EmailField(null=True)
 
     def save(self, *args, **kwargs):

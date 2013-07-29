@@ -106,8 +106,8 @@ class ProfileTestCase(SubscriptionTestCase):
         in setUp(), this should have fired.
         """
         pattern = r's2g_[a-zA-Z0-9_\-]{8}'
-        self.assertTrue(re.match(pattern, self.user.profile.s2g_email),
-                        'expected s2g email s2g + 8 random chars but got: %s' % self.user.profile.s2g_email)
+        self.assertTrue(re.match(pattern, self.user.s2g_profile.s2g_email),
+                        'expected s2g email s2g + 8 random chars but got: %s' % self.user.s2g_profile.s2g_email)
 
     def test_email_visible(self):
         # @todo
