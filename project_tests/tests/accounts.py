@@ -92,20 +92,14 @@ class RegistrationTestCase(TestCase):
         
         #but user is not active
         self.assertFalse(user.is_active)
-
-    def test_complete_registration(self):
-        user = User.objects.create_user(username='test_monkey',
-                                        password='test_pass')
-        user.is_active = False
         
-        profile = RegistrationProfile.objects.create(activation_key='aoeu',
-                                                     user=user)
+        #complete registration
+        profile = RegistrationProfile.objects.get(user=user)
         
         registration_complete_url = reverse('registration_activate', 
                                             kwargs={'activation_key': profile.activation_key})
         
-        res = self.client.get(registration_complete_url)
-        
+        res = self.client.get(registration_complete_url, follow=True)
         user = User.objects.get(pk=user.pk) #reload user
         self.assertTrue(user.is_active)
         
