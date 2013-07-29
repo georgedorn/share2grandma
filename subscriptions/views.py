@@ -90,7 +90,7 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
         
         return context
     
-        
+
 class VacationDeleteView(LoginRequiredMixin, DeleteView):
     model = Vacation
     success_url = reverse_lazy('dashboard_main')

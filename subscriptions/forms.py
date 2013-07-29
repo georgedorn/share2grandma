@@ -39,4 +39,3 @@ class VacationForm(forms.ModelForm):
         cleaned_data['start_date'] = start_date
         cleaned_data['end_date'] = end_date
         return cleaned_data
-    
