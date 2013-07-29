@@ -154,6 +154,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+
+AUTH_PROFILE_MODULE = 'subscriptions.Profile'
+
+
 #Until this bug is in the next django release, don't change the LOGIN_URL.
 #https://code.djangoproject.com/ticket/20114
 LOGIN_URL          = '/registration/login/'

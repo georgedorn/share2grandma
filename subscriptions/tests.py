@@ -1,4 +1,6 @@
+import re
 from datetime import datetime, timedelta
+
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
@@ -93,6 +95,23 @@ class SubscriptionTestCase(TestCase):
                                                   name='Nonna',
                                                   email='elsa@yahoo.com',
                                                   postcode='02540')
+
+
+class ProfileTestCase(SubscriptionTestCase):
+    """
+    Test the extended user profile and whatnot.
+    """
+    def test_model_save_email_gen(self):
+        """
+        in setUp(), this should have fired.
+        """
+        pattern = r's2g_[a-zA-Z0-9_\-]{8}'
+        self.assertTrue(re.match(pattern, self.user.profile.s2g_email),
+                        'expected s2g email s2g + 8 random chars but got: %s' % self.user.profile.s2g_email)
+
+    def test_email_visible(self):
+        # @todo
+        self.skipTest('write me')
 
 
 class TumblrSubscriptionTest(SubscriptionTestCase):

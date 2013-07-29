@@ -115,27 +115,30 @@ class Profile(models.Model):
     """
     Extend User with moar information.
     """
-    user = models.OneToOneField(User)
-    __s2g_email = models.EmailField(null=True)
+    user = models.OneToOneField(User, related_name='profile')
+    s2g_email = models.EmailField(null=True)
 
-    @property
-    def s2g_email(self):
+    def save(self, *args, **kwargs):
         """
-        returns a static s2g email from self.__s2g_email or generates,
-        saves, then returns it if it doesn't exist.
+        On save, if this object doesn't have a proper s2g_email, we generate
+        one randomly.
         """
-        if self.__s2g_email is None:
+        if self.s2g_email is None:
             generated_okay = False
 
             while not generated_okay:
-                u = uuid.uuid4()        # random
-                u = u.fields['node']    # 48 bits = 8 b64 chars
-                suffix = base64.b64encode(str(u), '-_')
-                email = "s2g%s" % suffix
+                u = str(uuid.uuid4())[-8:]        # 8 random chars
+                email = "s2g_%s" % u
 
-                if Profile.objects.count(__s2g_email=email) == 0:
-                    self.__s2g_email = email
-                    self.save()
+                if not Profile.objects.filter(s2g_email=email).exists():
+                    self.s2g_email = email
                     generated_okay = True
 
-        return self.__s2g_email
+        return super(Profile, self).save(*args, **kwargs)
+
+# http://stackoverflow.com/questions/13460426/get-user-profile-in-django
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+models.signals.post_save.connect(create_user_profile, sender=User)
