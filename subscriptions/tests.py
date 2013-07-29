@@ -51,20 +51,36 @@ class TumblrSubscriptionProcessorTest(TestCase):
         self.assertTrue(caught, "Didn't catch expected exception with bad blog name.")
 
 
-    def test_grab(self):
+    def test_num_items_stored(self):
         # @todo
-        pass
+        raise self.skipTest('write me')
 
 
-    def test_grab_no_new_posts(self):
+    def test_pull_content(self):
         # @todo
-        pass
+        raise self.skipTest('write me')
 
 
-    def test_mangle(self):
+    def test_pull_content_no_new_posts(self):
         # @todo
-        pass
-    
+        raise self.skipTest('write me')
+
+
+    def test_transform_content_longform(self):
+        # @todo
+        raise self.skipTest('write me')
+
+
+    def test_transform_content_shortform(self):
+        # @todo
+        raise self.skipTest('write me')
+
+
+    def test_transform_content_shortform_low_max(self):
+        # @todo
+        raise self.skipTest('write me')
+
+
     
 class SubscriptionTestCase(TestCase):
     def setUp(self):
