@@ -7,9 +7,9 @@ from subscriptions.models import GenericSubscription, TumblrSubscription
 from subscriptions.forms import TumblrSubscriptionForm
 
 
-class FAQView(TemplateView):
+class FAQView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard/faq.html"
 
 
-class DashboardView(TemplateView):
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard/dashboard.html"
