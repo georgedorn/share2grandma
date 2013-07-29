@@ -19,6 +19,10 @@ class GenericSubscription(models.Model):
     pretty_name = models.CharField(blank=True, max_length=80)
     avatar = models.TextField(null=True, blank=True)      # set to generic for subscriptions w/no avatar
 
+    num_borked_calls = models.IntegerField(null=False, default=0)    # how many times in a row we had a borked call?
+    first_borked_call_time = models.DateTimeField(null=True)            # and since when?
+    appears_broken = models.BooleanField(default=False)                 # are we pretty sure user intervention is needed?
+
 
 class Recipient(models.Model):
     user = models.ForeignKey(User, related_name='recipients')
@@ -30,7 +34,11 @@ class Recipient(models.Model):
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
-    # @todo wakeup / postcode field here - https://github.com/mthornhill/django-postal -- for DailyWakeup weather
+    # For weather with DailyWakeup ... @todo
+    # city
+    # state
+    # country - django-countries?
+    postcode = models.CharField(null=True, blank=True, max_length=16)
 
     def get_absolute_url(self):
         return reverse('recipient_detail', kwargs={'pk':self.pk})

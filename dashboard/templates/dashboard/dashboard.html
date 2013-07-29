@@ -67,6 +67,9 @@
                 <li>{% blocktrans with email=recipient.email %}
                     Receives email at {{ email }}
                 {% endblocktrans %}</li>
+                <li>{% blocktrans with postcode=recipient.postcode %}
+                    For weather delivery, postecode listed at {{ postcode }}
+                {% endblocktrans %}</li>
                 <li>{% trans "Subscriptions:" %}
                     <ul>
                     {% if recipient.subscriptions %}

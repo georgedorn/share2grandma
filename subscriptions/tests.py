@@ -75,7 +75,8 @@ class SubscriptionTestCase(TestCase):
 
         self.recipient = Recipient.objects.create(user=self.user,
                                                   name='Nonna',
-                                                  email='elsa@yahoo.com')
+                                                  email='elsa@yahoo.com',
+                                                  postcode='02540')
 
 
 class TumblrSubscriptionTest(SubscriptionTestCase):
@@ -124,6 +125,9 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
 
         obj = TumblrSubscription.objects.get(short_name='demo', recipient=self.recipient)
         self.assertTrue(isinstance(obj, TumblrSubscription))
+        self.assertEqual(obj.num_borked_calls, 0)
+        self.assertEqual(obj.first_borked_call_time, None)
+        self.assertFalse(obj.appears_broken)
 
         success = False
         for url, status in res.redirect_chain:
