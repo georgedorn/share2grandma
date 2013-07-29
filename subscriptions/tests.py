@@ -10,6 +10,7 @@ from .models import TumblrSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
+from subscriptions.forms import VacationForm
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
