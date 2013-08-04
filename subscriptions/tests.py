@@ -130,6 +130,18 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.assertEqual('Demo', subscription.pretty_name)
         self.assertEqual(1269024321, subscription.last_post_ts)
 
+    def test_update_from_nonexistent_tumblr(self):
+        """
+        not via UI, tumblr which doesn't exist
+        """
+        self.skipTest('writeme')
+
+    def test_update_from_temporarily_borked_tumblr(self):
+        """
+        Simulate a server error that's likely temporary
+        """
+        self.skipTest('writeme')
+
     def test_create_tumblr_subscription_form_exists(self):
         """
         UI
@@ -213,7 +225,26 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         # make sure we have one fewer TumblrSubscriptions than before
         self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
 
-    def test_login_require(self):
+    def test_subscription_detail_view(self):
+        # does this exist somewhere else?
+        self.skipTest('writeme')
+
+    def test_subscription_detail_view_somebody_elses_subscription(self):
+        self.skipTest('writeme')
+
+    def test_delete_somebody_elses_tumblr_subscription(self):
+        self.skipTest('writeme')
+
+    def test_create_somebody_elses_tumblr_subscription(self):
+        self.skipTest('writeme')
+
+    def test_create_tumblr_subscription_nonexistent_recipient(self):
+        self.skipTest('writeme')
+
+    def test_create_tumblr_subscription_somebody_elses_recipient(self):
+        self.skipTest('writeme')
+
+    def test_login_required(self):
         subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
 
@@ -232,6 +263,19 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
                     if status >= 301 and status <= 302:
                         success = True
             self.assertTrue(success)
+
+    def test_pull_content(self):
+        self.skipTest('writeme')
+
+    def test_pull_content_temporarily_borked_tumblr(self):
+        self.skipTest('writeme')
+
+    def test_pull_content_temporarily_borked_tumblr_5_times(self):
+        self.skipTest('writeme')
+
+    def test_pull_content_broken_tumblr(self):
+        self.skipTest('writeme')
+
 
 
 class RecipientTest(SubscriptionTestCase):
@@ -314,7 +358,19 @@ class RecipientTest(SubscriptionTestCase):
         Delete a Recipient via the UI
         """
         # not yet implemented, different story
-        pass
+        self.skipTest('writeme')
+
+
+    def test_delete_somebody_elses_recipient(self):
+        self.skipTest('writeme')
+
+
+    def test_create_somebody_elses_recipient(self):
+        self.skipTest('writeme')
+
+
+    def test_create_recipient_nonexistent_user(self):
+        self.skipTest('writeme')
 
 
     def test_detail_view(self):
@@ -336,6 +392,10 @@ class RecipientTest(SubscriptionTestCase):
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
 
+    def test_detail_view_somebody_elses_recipient(self):
+        self.skipTest('writeme')
+
+
     def test_dashboard_recipient_display(self):
         """
         Test that the Recipient shows up on the dashboard
@@ -354,6 +414,7 @@ class RecipientTest(SubscriptionTestCase):
 
             self.assertTrue(str(v) in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
+
 
 
 class VacationTests(SubscriptionTestCase):
