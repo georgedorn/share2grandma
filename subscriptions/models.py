@@ -25,7 +25,7 @@ class GenericSubscription(models.Model):
 
 
 class Recipient(models.Model):
-    user = models.ForeignKey(User, related_name='recipients')
+    sender = models.ForeignKey(User, related_name='recipients')
     # the following can differ per recipient.  "bobby" vs "Robert" etc.
     sender_name = models.CharField(null=False, blank=False, max_length=64)
     # also variable by recipient

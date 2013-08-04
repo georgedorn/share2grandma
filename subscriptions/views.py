@@ -57,7 +57,7 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
         if not hasattr(self, '_recipient'):
             recipient_id = self.kwargs['recipient_id']
             user = self.request.user
-            self._recipient = get_object_or_404(Recipient, pk=recipient_id, user=user)
+            self._recipient = get_object_or_404(Recipient, pk=recipient_id, sender=user)
         return self._recipient
     
     def get_form_kwargs(self):
@@ -104,7 +104,7 @@ class VacationDeleteView(LoginRequiredMixin, DeleteView):
 
         #get_object takes a queryset, so we're going to pre-filter it to ensure the
         #recipient belongs to the logged-in user
-        qs = Vacation.objects.filter(recipient__user=request.user)
+        qs = Vacation.objects.filter(recipient__sender=request.user)
         vacation = self.get_object(qs)
         
         if vacation.start_date < now:
