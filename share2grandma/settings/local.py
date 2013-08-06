@@ -40,3 +40,5 @@ TUMBLR_CONSUMER_SECRET = 'C1P3TznBoZsNtrfAxnQSoWLDSq0J6Msnk468OJfTMF90XOipbO'
 GOOGLE_OAUTH2_CLIENT_ID = '203401500199-mmi2uonvq09ksnspjj8ofbt6gdi8upch.apps.googleusercontent.com'
 GOOGLE_OAUTH2_CLIENT_SECRET = 'sijcp1Uyx5l1O1vKTFEYij3x'
 
+INSTALLED_APPS += ('django_extensions',)
+

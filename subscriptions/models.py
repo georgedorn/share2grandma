@@ -154,6 +154,7 @@ class Profile(models.Model):
         return super(Profile, self).save(*args, **kwargs)
 
 # http://stackoverflow.com/questions/13460426/get-user-profile-in-django
+# http://stackoverflow.com/a/10575330/402605 (don't create superuser during syncdb)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
