@@ -10,6 +10,8 @@ from .models import TumblrSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
+import locale
+
 from subscriptions.forms import VacationForm
 
 class TumblrSubscriptionProcessorTest(TestCase):
@@ -385,11 +387,8 @@ class RecipientTest(SubscriptionTestCase):
         for field in self.recipient._meta.fields:
             v = getattr(self.recipient, field.name)
 
-            if field.name == 'add_date':
-                v = v.strftime('%B %d, %Y')     # @todo: use whatever Django's using instead of hardcoding
-
             self.assertTrue(str(v) in res.rendered_content,
-                            "Expected value '%s' for field '%s' in rendered content" % (v, field))
+                            "Expected value '%s' for field '%s' in rendered content %s" % (v, field, res.content))
 
 
     def test_detail_view_somebody_elses_recipient(self):
@@ -407,8 +406,6 @@ class RecipientTest(SubscriptionTestCase):
         for field in self.recipient._meta.fields:
             v = getattr(self.recipient, field.name)
 
-            if field.name == 'add_date':
-                v = v.strftime('%B %d, %Y')     # @todo: use whatever Django's using instead of hardcoding
             if field.name == 'timezone':
                 continue    # not currently displayed.
 
