@@ -1,7 +1,6 @@
 *.py[cod]
 
 *.db
-.idea
 
 # C extensions
 *.so
@@ -36,3 +35,6 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+.env
+.idea
+
