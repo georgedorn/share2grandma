@@ -10,6 +10,11 @@ from django.contrib.auth.models import User
 from timezone_field import TimeZoneField
 
 from .tumblr_subscription_processor import TumblrSubscriptionProcessor
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
+from pytumblr import TumblrRestClient
+from django.conf import settings
+from django.db.models.query_utils import Q
 
 
 class GenericSubscription(models.Model):
@@ -23,6 +28,14 @@ class GenericSubscription(models.Model):
     first_borked_call_time = models.DateTimeField(null=True)            # and since when?
     appears_broken = models.BooleanField(default=False)                 # are we pretty sure user intervention is needed?
 
+    def pull_content(self):
+        raise NotImplementedError
+
+    def pull_metadata(self):
+        raise NotImplementedError
+    
+    class Meta:
+        abstract=True
 
 class Recipient(models.Model):
     sender = models.ForeignKey(User, related_name='recipients')
@@ -34,6 +47,8 @@ class Recipient(models.Model):
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
+    
+    bucket = models.IntegerField(null=True)
     # For weather with DailyWakeup ... @todo
     # city
     # state
@@ -62,21 +77,95 @@ class Recipient(models.Model):
         return Vacation.objects.filter(start_date__gt=now,
                                        recipient=self).order_by('start_date')
 
+    def save(self, *args, **kwargs):
+        if self.bucket is None:
+            #@todo: hash primary key into X buckets for load balancing
+            self.bucket = 1
+        return super(Recipient, self).save(*args, **kwargs)
+    
+    @staticmethod
+    def get_recipients_due_for_pull(bucket, daily_wakeup_bucket=None):
+        """
+        Get all of the recipients that are due for a content pull.
+        Used by manage.py pull_content.
+        """
+        if daily_wakeup_bucket is not None:
+            wakeups = DailyWakeupSubscription.objects.filter(delivery_bucket=daily_wakeup_bucket)
+            wakeup_recipient_ids = [wakeup.recipient.pk for wakeup in wakeups]
+            filters = Q(bucket=bucket) | Q(pk__in=wakeup_recipient_ids)
+        else:
+            filters = Q(bucket=bucket)
+
+        return Recipient.objects.filter(filters)
+
+
 
 class TumblrSubscription(GenericSubscription):
     last_post_ts = models.BigIntegerField(null=True, blank=True)
 
-    def update_from_tumblr(self, save=False):
+    def _make_client(self):
         """
-        @todo this should probably be named something that doesn't imply that it's
-        updating *content*, because it isn't.
+        Creates a tumblr client and read the blog's info to
+        verify it exists and gets metadata.
         """
-        processor = TumblrSubscriptionProcessor(self)
-        info = processor.setup_subscription()
+        client = TumblrRestClient(consumer_key=settings.TUMBLR_API_KEY)
+        blog_info_raw = client.blog_info(self.short_name)
 
-        self.avatar = info['avatar']
-        self.pretty_name = info['pretty_name']
-        self.last_post_ts = info['last_post_ts']
+        if 'meta' in blog_info_raw.keys():
+            e_msg = "Status %s - %s" % (blog_info_raw['meta']['status'], blog_info_raw['meta']['msg'])
+            if int(blog_info_raw['meta']['status']) == 404:
+                raise KeyError, e_msg
+            else:
+                raise ValueError, e_msg
+
+        client.tumblr_info = blog_info_raw['blog']
+        return client
+
+    def pull_content(self):
+        """
+        Get new blog entries from tumblr.
+        """
+        client = self._make_client()
+        post_list = []
+
+        # Step 1: check if updated, if not, don't start pulling posts and bail early
+        if(client.tumblr_info['updated'] <= self.last_post_ts):
+            return post_list
+        
+        # Step 2: Repeatedly get posts from blog 
+        done_queueing = False
+
+        while not done_queueing:
+            twenty_posts = self.client.posts(self.short_name,
+                                             limit=20,
+                                             offset=len(post_list))['posts']
+
+            for post in twenty_posts:
+                # Step 3: and stop when we see one <= self.subscription.last_poll_time
+
+                if post['timestamp'] <= self.last_post_ts:
+                    done_queueing = True #checked by while loop
+                    break
+                else:
+                    self.tumblr_post_list.append(post)
+
+        return post_list
+
+    
+    def pull_metadata(self, save=False):
+        """
+        Get info about the blog from Tumblr; not the content.
+        """
+        client = self._make_client()
+        
+        # Get avatar
+        self.avatar = client.avatar(self.short_name)['avatar_url']
+
+        # Get blog pretty_name
+        self.pretty_name = client.tumblr_info['title']
+
+        # Get most recent post's timestamp
+        self.last_post_ts = client.tumblr_info['updated']
 
         if save is True:
             self.save()
@@ -85,7 +174,7 @@ class TumblrSubscription(GenericSubscription):
         # check if it looks like this is a brand new object, if so, pull the
         # data from tumblr
         if not self.avatar and not self.pretty_name:
-            self.update_from_tumblr()
+            self.pull_metadata()
 
         super(TumblrSubscription, self).save(*args, **kwargs)
 
@@ -100,6 +189,19 @@ admin.site.register(TumblrSubscription)
 
 
 class DailyWakeupSubscription(GenericSubscription):
+    delivery_time = models.IntegerField() #hour, from 0-23, in recipient's timezone
+    delivery_bucket = models.IntegerField() #hour, from 0-23, in UTC
+    
+    def save(self, *args, **kwargs):
+        #@todo: calculate delivery_bucket based on the delivery time and recipient's timezone
+        
+        return super(DailyWakeupSubscription, self).save(*args, **kwargs)
+    
+        
+    @property
+    def timezone(self):
+        return self.recipient.timezone
+    
     def get_absolute_url(self):
         return reverse('subscription_detail_dailywakeup', kwargs={'pk':self.pk})
 
@@ -108,6 +210,16 @@ class DailyWakeupSubscription(GenericSubscription):
         return "%s (DailyWakeup) sub for %s" % (self.short_name, self.user)
 
 admin.site.register(DailyWakeupSubscription)
+
+
+class DailyWakeupContent(models.Model):
+    expires = models.DateTimeField()
+    daily_wakeup_subscription = models.ForeignKey(DailyWakeupSubscription)
+    content = models.CharField(max_length=160)
+    
+    subscription_type = models.ForeignKey(ContentType) #which subscription class provided this content?  e.g. tumblr, gcal
+    subscription_id = models.PositiveIntegerField() #which instance of the subscription class provided this content?  e.g. Bob's gcal subscriptions, Annie's tumblr
+    content_source = generic.GenericForeignKey('subscription_type', 'subscription_id')
 
 
 class Vacation(models.Model):
