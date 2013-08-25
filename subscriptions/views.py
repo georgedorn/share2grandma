@@ -22,6 +22,12 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
     model = Recipient
     form_class = RecipientForm
 
+# @todo:  User can set a time to send a daily wakeup, so check for that and create/update if needed
+#    def post(self, request):
+#        if request.POST.get('daily_wakeup_time'):
+#            #do the daily wakeup stuff
+#        return super(RecipientCreateView, self).post(self, request)
+
 
 class RecipientDetailView(LoginRequiredMixin, DetailView):
     model = Recipient
