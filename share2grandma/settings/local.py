@@ -40,5 +40,18 @@ TUMBLR_CONSUMER_SECRET = 'C1P3TznBoZsNtrfAxnQSoWLDSq0J6Msnk468OJfTMF90XOipbO'
 GOOGLE_OAUTH2_CLIENT_ID = '203401500199-mmi2uonvq09ksnspjj8ofbt6gdi8upch.apps.googleusercontent.com'
 GOOGLE_OAUTH2_CLIENT_SECRET = 'sijcp1Uyx5l1O1vKTFEYij3x'
 
-INSTALLED_APPS += ('django_extensions',)
+INSTALLED_APPS += ('django_extensions','debug_toolbar')
+
+MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
+
+
+#Debug toolbar stuff.  If we're using local.py, we want the toolbar.  Nevermind the IP address nonsense.
+def custom_show_toolbar(request):
+    return True  # Always show toolbar, for example purposes only.
+
+DEBUG_TOOLBAR_CONFIG = {
+    'INTERCEPT_REDIRECTS': True,
+    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'ENABLE_STACKTRACES' : True,
+}
 
