@@ -34,8 +34,6 @@ class GenericSubscription(models.Model):
     def pull_metadata(self):
         raise NotImplementedError
     
-    class Meta:
-        abstract=True
 
 class Recipient(models.Model):
     sender = models.ForeignKey(User, related_name='recipients')
@@ -77,6 +75,16 @@ class Recipient(models.Model):
         return Vacation.objects.filter(start_date__gt=now,
                                        recipient=self).order_by('start_date')
 
+    @staticmethod
+    def get_vacationing_recipients():
+        """
+        Returns a queryset of recipients currently on vacation, for 
+        exclusion from processing.
+        """
+        now = timezone.now()
+        return Recipient.objects.filter(vacations__start_date__lt=now,
+                                        vacations__end_date__gt=now).distinct()
+        
     def save(self, *args, **kwargs):
         if self.bucket is None:
             #@todo: hash primary key into X buckets for load balancing
