@@ -2,48 +2,46 @@
 {% load i18n %}
 {% block content %}
 <h1>{% trans "Share2Grandma Dashboard" %}</h1>
+    {% if user.first_name %}
+        <p>{% blocktrans with fname=user.first_name lname=user.last_name %}Your name is {{fname}} {{lname}}. {% endblocktrans %}
+    {% elif user.username %}
+        <p>{% blocktrans with name=user.username %}Your username is {{name}}. {% endblocktrans %}
+    {% endif %}
 
-    <p>{% blocktrans %}We know you as {{ user.realname }}.  You signed up for Share2Grandma on {{ user.signup_date }}.{% endblocktrans %}</p>
+    <p>{% blocktrans with date=user.date_joined %}You joined Share2Grandma on {{ date }}.{% endblocktrans %}</p>
 
-    {% if user.has_real_account %}
+    {% if user.has_usable_password %}
         <p>{% blocktrans with username=user.username %}
             You have a local Share2Grandma account.  Your username is {{ username }}.  <a href="@todo">Click
             here</a> to change your password.
         {% endblocktrans %}</p>
     {% else %}
-        <p>{% blocktrans with service=user.social_auth_signup_service %}
-            You do not have a Share2Grandma username and password because you signed up through {{ service }}.
-            {% endblocktrans %}
+        <p>{% blocktrans%}You do not have a Share2Grandma username and password.{% endblocktrans %}
             <a href="{% url 'registration_register' %}">{% trans "Click here" context "to do x" %}</a> {% trans "to create a username and password on Share2Grandma." context "do x to ..." %}
         </p>
     {% endif %}
-
+    
      <p>{% blocktrans with myemail=user.originating_email %}
-         Email to your recipients is dispatched from {{ myemail }}.  <strong>You must add this address to
+         Email to your recipients is dispatched from {{ myemail }}[TODO].  <strong>You must add this address to
         your recipients' whitelists</strong> or your messages won't go through!
      {% endblocktrans %}</p>
 
-
-<h2>{% trans "Your service connections" %}</h2>
-
+{% if user.social_auth.all %}
+    <h2>{% trans "Your service connections" %}</h2>
     <p>{% blocktrans %}You've connected these sites to your Share2Grandma account.  You may be able to log in, subscribe to feeds, or
     both, from these services.{% endblocktrans %}</p>
-
     <ul>
-    {% if user.social_auth_services.count %}
-        {% for service in user.social_auth_services.all %}
-        <li>[logo] {{ service.name }}, {% trans "connected" context "service, ___ [date]" %} {{ service.connect_date }}
-            <ul>
-                <li><strong>{# @todo whole line i18n fixup #}CAN{% if not service.login_available %}NOT{% endif %}</strong> login with this service</li>
-                <li><strong>{# @todo whole line  i18n fixup #}CAN{% if not service.feeds_available  %}NOT{% endif %}</strong> subscribe to feeds with this service</li>
-            </ul>
-        </li>
-        {% endfor %}
-        <li>{% blocktrans %}<a href="@todo need a service chooser to feed into socialauth_begin">Add another</a> service?{% endblocktrans %}</li>
-    {% else %}
-        <li>{% blocktrans %}No services set up yet.  <a href="@todo need a service chooser to feed into socialauth_begin">Add a service?</a>{% endblocktrans %}</li>
-    {% endif %}
+    {% for auth in user.social_auth.all %}
+        {% blocktrans with service=auth.provider uid=auth.uid %}
+            <li>[logo] {{service}} as {{uid}}</li>
+        {% endblocktrans %}                    
+    {% endfor %}
     </ul>
+{% else %}
+<h2>{% trans "You haven't added any service connections."</h2>
+{% endif %}
+You can add more service connections by <a href="{% url "login" %}">{% trans "Logging in again." noop %}</a>
+
 
 
 <h2>{% trans "Your recipients" %}</h2>
