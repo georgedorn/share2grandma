@@ -126,7 +126,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         subscription = TumblrSubscription(short_name='demo')
         subscription.recipient = self.recipient
 
-        subscription.update_from_tumblr()
+        subscription.pull_metadata()
 
         self.assertTrue('default_avatar' in subscription.avatar)
         self.assertEqual('Demo', subscription.pretty_name)
@@ -473,6 +473,30 @@ class VacationTests(SubscriptionTestCase):
                                 )
         self.assertTrue(self.recipient.is_on_vacation())
                                 
+    def test_get_vacationing_recipients(self):
+        """
+        Tests getting the set of recipients currently on vacation.
+        """
+        #start with a clean slate
+        Recipient.objects.all().delete()
+        now = dutz.now()
+        last_week = now - timedelta(days=7)
+        next_week = now + timedelta(days=7)
+        
+        for i in range(10):
+            recipient = Recipient.objects.create(sender=self.user,
+                                     name='Nonna_%s' % i,
+                                     email='elsa_%s@yahoo.com' % i,
+                                     postcode='02540')
+                    
+            if i < 4: #create vacations for the first four
+                Vacation.objects.create(recipient=recipient,
+                                        start_date=last_week,
+                                        end_date=next_week)
+        
+        self.assertEqual(Recipient.get_vacationing_recipients().count(), 4)
+        self.assertEqual(Recipient.objects.exclude(pk__in=Recipient.get_vacationing_recipients()).count(), 6)
+                
 
     def test_stupid_vacation(self):
         """

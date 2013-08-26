@@ -1,7 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from subscriptions.models import Recipient
+from subscriptions.models import Recipient, DailyWakeupSubscription,\
+    TumblrSubscription
+from django.db.models.query_utils import Q
 
 
 #1. get list of recipients that need to have content pulled at this time
@@ -15,7 +17,7 @@ def get_current_bucket():
 
 def get_daily_wakeup_bucket():
     now = timezone.now().utcnow()
-    now += timezone.timedelta(minutes=30)
+    now += timezone.timedelta(minutes=90) #we do the daily wakeup pulls 90 minutes before delivery deadline
     return now.hour
     
 
@@ -24,26 +26,15 @@ class Command(BaseCommand):
     help = 'Closes the specified poll for voting'
 
     def handle(self, *args, **options):
-
         bucket = get_current_bucket()
-        
-        recipients = Recipient.objects.filter(bucket=bucket)
-
+        daily_wakeup_bucket = get_daily_wakeup_bucket()
         #also include recipients that have a daily wakeup subscription 30-90 minutes from now
+        recipients = Recipient.get_recipients_due_for_pull(bucket, daily_wakeup_bucket)
         
+        #do all of the tumblrs.
+        tumblr_subscriptions = TumblrSubscription.objects.filter(recipient__in=recipients)
         
-        
-        
+        for tumblr_subscription in tumblr_subscriptions:
+            tumblr_subscription.pull_content()
 
         
-        
-        for poll_id in args:
-            try:
-                poll = Poll.objects.get(pk=int(poll_id))
-            except Poll.DoesNotExist:
-                raise CommandError('Poll "%s" does not exist' % poll_id)
-
-            poll.opened = False
-            poll.save()
-
-            self.stdout.write('Successfully closed poll "%s"' % poll_id)
