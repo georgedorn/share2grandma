@@ -9,7 +9,6 @@ from django.contrib.auth.models import User
 
 from timezone_field import TimeZoneField
 
-from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from pytumblr import TumblrRestClient

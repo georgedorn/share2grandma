@@ -8,7 +8,6 @@ from django.utils import timezone as dutz
 
 from .models import TumblrSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
-from .tumblr_subscription_processor import TumblrSubscriptionProcessor
 import pytz
 import locale
 
@@ -26,23 +25,21 @@ class TumblrSubscriptionProcessorTest(TestCase):
                                                   email='mams@aol.com')
         self.subscription = TumblrSubscription(recipient=self.recipient,
                                                short_name='demo')
-        self.tumblr = TumblrSubscriptionProcessor(self.subscription)
 
 
     def test_get_blog_info(self):
-        info = self.tumblr.setup_subscription()
-
-        self.assertTrue('default_avatar' in info['avatar'])
-        self.assertEqual('Demo', info['pretty_name'])
-        self.assertEqual(1269024321, info['last_post_ts'])
-
+        self.subscription.pull_metadata()
+        self.assertTrue('default_avatar' in self.subscription.avatar)
+        self.assertEqual('Demo', self.subscription.pretty_name)
+        self.assertEqual(1269024321, self.subscription.last_post_ts)
+        
 
     def test_instantiate_badblog(self):
-        my_subscription = TumblrSubscription(recipient=self.recipient,
-                                             short_name='zmxmdmcnnjjncn')
         caught = False
         try:
-            TumblrSubscriptionProcessor(my_subscription)
+            my_subscription = TumblrSubscription(recipient=self.recipient,
+                                             short_name='zmxmdmcnnjjncn')
+            my_subscription.pull_metadata()
         except KeyError, e:
             caught = True
 
