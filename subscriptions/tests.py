@@ -409,6 +409,24 @@ class RecipientTest(SubscriptionTestCase):
             self.assertTrue(str(v) in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
+    def test_calculate_localnoon_bucket_string_timezone(self):
+        self.skipTest('writeme')
+
+    def test_calculate_localnoon_bucket_datetimezone(self):
+        self.skipTest('writeme')
+
+    def test_calculate_localnoon_bucket_noargs(self):
+        self.skipTest('writeme')
+
+    def test_calculate_localnoon_halfhour_timezone(self):
+        # use America/St_Johns, bucket should be incremented by 1.
+        self.skipTest('writeme')
+
+    def test_calculate_delivery_buckets(self):
+        self.skipTest('writeme')
+
+    def test_calculate_delivery_buckets_no_args(self):
+        self.skipTest('writeme')
 
 
 class VacationTests(SubscriptionTestCase):

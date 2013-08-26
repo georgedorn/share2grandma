@@ -1,5 +1,7 @@
 import base64
 import uuid
+import random
+from datetime import datetime
 
 from django.db import models
 from django.contrib import admin
@@ -7,6 +9,8 @@ from django.core.urlresolvers import reverse
 from django.utils import timezone
 from django.contrib.auth.models import User
 
+from sanetime import time, delta
+#from sanetime.dj import SaneTimeField
 from timezone_field import TimeZoneField
 
 from django.contrib.contenttypes.models import ContentType
@@ -44,8 +48,13 @@ class Recipient(models.Model):
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
-    
-    bucket = models.IntegerField(null=True)
+
+    dailywakeup_bucket = models.IntegerField(null=True)
+    localnoon_bucket = models.IntegerField(null=True)
+    morning_bucket = models.IntegerField(null=True)
+    evening_bucket = models.IntegerField(null=True)
+    wee_hours_bucket = models.IntegerField(null=True)
+
     # For weather with DailyWakeup ... @todo
     # city
     # state
@@ -83,11 +92,70 @@ class Recipient(models.Model):
         now = timezone.now()
         return Recipient.objects.filter(vacations__start_date__lt=now,
                                         vacations__end_date__gt=now).distinct()
-        
+
+    @staticmethod
+    def _calculate_localnoon_bucket(timezone='America/Chicago'):
+        """
+        Given a timezone, figure out local noon.  Convert that to UTC, then
+        "bucketize" it, e.g. make it an integer from 0 to 47 where:
+
+        0 = 0:00 - 0:29:59 UTC delivery time
+        1 = 0:30 - 0:59:59 UTC delivery time
+        2 = 1:00 - 1:29:59 UTC delivery time
+        ..
+        47 = 23:30 - 23:59:59 UTC delivery time
+
+        Args:
+            timezone: string or datetime.timezone maybe?
+
+        Returns:
+            int between 0 and 47.  See description.
+        """
+        now = time(datetime.now(tz=timezone))
+        local_noon = time(now.year, now.month, now.day, 12, 0, 0, 0, now.tz)
+        utc_noon = local_noon.set_tz('UTC')
+        localnoon_bucket = utc_noon.hour
+        if utc_noon.minute:
+            print "lulz"
+            localnoon_bucket += 1
+        return localnoon_bucket
+
+    @staticmethod
+    def _calculate_delivery_buckets(localnoon_bucket=36):
+        """
+        Sets the three basic-user call times:  takes localnoon_bucket
+        and returns a morning_bucket (11am), evening_bucket (5pm) and
+        wee hours bucket (2am) with an up-to-3-hour shift (in half hour
+        aka 1-bucket increments) in either direction away from the given
+        times, for local balancing.
+
+        Args:
+            localnoon_bucket: int, ranging from 0-47, representing the time in
+                UTC which corresponds to the Recipient's local noon.
+
+        Returns:
+            tuple of ints. (morning_bucket, evening_bucket, wee_hours_bucket)
+                with random shifts applied.
+        """
+        random.seed()
+        morn = random.randint(-6,6)
+        eve = random.randint(-6,6)
+        weears = random.randint(-6,6)
+
+        morning_bucket = (localnoon_bucket - 2 + morn) % 48
+        evening_bucket = (localnoon_bucket + 10 + eve) % 48
+        wee_hours_bucket = (localnoon_bucket + 28 + weears) % 48
+
+        return (morning_bucket, evening_bucket, wee_hours_bucket)
+
     def save(self, *args, **kwargs):
-        if self.bucket is None:
-            #@todo: hash primary key into X buckets for load balancing
-            self.bucket = 1
+        if self.localnoon_bucket is None:
+            self.localnoon_bucket = self._calculate_localnoon_bucket(self.timezone)
+
+        if None in (self.morning_bucket, self.evening_bucket, self.wee_hours_bucket):
+            (self.morning_bucket, self.evening_bucket, self.wee_hours_bucket) = \
+                self._calculate_delivery_buckets(self.localnoon_bucket)
+
         return super(Recipient, self).save(*args, **kwargs)
     
     @staticmethod

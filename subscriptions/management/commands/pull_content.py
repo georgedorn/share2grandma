@@ -15,7 +15,7 @@ def get_current_bucket():
     #@todo:  figure out which bucket the current run belongs to
     return 1
 
-def get_daily_wakeup_bucket():
+def get_current_daily_wakeup_bucket():
     now = timezone.now().utcnow()
     now += timezone.timedelta(minutes=90) #we do the daily wakeup pulls 90 minutes before delivery deadline
     return now.hour
