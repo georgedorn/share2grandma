@@ -49,8 +49,8 @@ class Recipient(models.Model):
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
 
-    dailywakeup_bucket = models.IntegerField(null=True)
-    localnoon_bucket = models.IntegerField(null=True)
+    dailywakeup_hour = models.IntegerField(null=True)       # for human use; requested local delivery hour
+    dailywakeup_bucket = models.IntegerField(null=True)     # calculated for dispatch use
     morning_bucket = models.IntegerField(null=True)
     evening_bucket = models.IntegerField(null=True)
     wee_hours_bucket = models.IntegerField(null=True)
@@ -93,8 +93,8 @@ class Recipient(models.Model):
         return Recipient.objects.filter(vacations__start_date__lt=now,
                                         vacations__end_date__gt=now).distinct()
 
-    @staticmethod
-    def _calculate_localnoon_bucket(timezone='America/Chicago'):
+    @property
+    def localnoon_bucket(timezone='America/Chicago'):
         """
         Given a timezone, figure out local noon.  Convert that to UTC, then
         "bucketize" it, e.g. make it an integer from 0 to 47 where:
@@ -114,11 +114,35 @@ class Recipient(models.Model):
         now = time(datetime.now(tz=timezone))
         local_noon = time(now.year, now.month, now.day, 12, 0, 0, 0, now.tz)
         utc_noon = local_noon.set_tz('UTC')
-        localnoon_bucket = utc_noon.hour
+        localnoon_bucket = utc_noon.hour * 2
         if utc_noon.minute:
-            print "lulz"
             localnoon_bucket += 1
         return localnoon_bucket
+
+
+    @staticmethod
+    def _calculate_dailywakeup_bucket(dailywakeup_hour=None):
+        """
+        Calculates the daily wakeup bucket for this recipient based on the
+        Daily Wakeup delivery time specified by the User, and the Recipient's
+        time zone.  NOTE that the bucket will be 90 minutes (3 buckets) PRIOR to
+        the requested delivery time, because Presto delivery times are approximate
+        and their email handling system can be slow.
+
+        Args:
+            dailywakeup_hour. int. An hour of the day, 0-23.
+
+        Returns:
+            int. The bucket (half-hour division) on the clock during which Daily
+                Wakeup content should be aggregated from queue (if any) and dispatched.
+                90 minutes before the user's selected delivery time.
+        """
+        now = time(datetime.now(tz=timezone))
+        dailywakeup_hour = time(now.year, now.month, now.day, dailywakeup_hour, 0, 0, 0, now.tz)
+        dailywakeup_dispatch_delta = delta(m=-90)
+        dailywakeup_dispatch_hour = dailywakeup_hour + dailywakeup_dispatch_delta
+        return dailywakeup_dispatch_hour.hour * 2
+
 
     @staticmethod
     def _calculate_delivery_buckets(localnoon_bucket=36):
@@ -148,6 +172,7 @@ class Recipient(models.Model):
 
         return (morning_bucket, evening_bucket, wee_hours_bucket)
 
+
     def save(self, *args, **kwargs):
         if self.localnoon_bucket is None:
             self.localnoon_bucket = self._calculate_localnoon_bucket(self.timezone)
@@ -157,13 +182,16 @@ class Recipient(models.Model):
                 self._calculate_delivery_buckets(self.localnoon_bucket)
 
         return super(Recipient, self).save(*args, **kwargs)
-    
+
+
     @staticmethod
-    def get_recipients_due_for_pull(bucket, daily_wakeup_bucket=None):
+    def get_recipients_due_for_processing(bucket):
         """
-        Get all of the recipients that are due for a content pull.
+        Get all of the recipients that are due for a content pull/dispatch.
         Used by manage.py pull_content.
         """
+
+        # @todo fix these renamed vars
         if daily_wakeup_bucket is not None:
             wakeups = DailyWakeupSubscription.objects.filter(delivery_bucket=daily_wakeup_bucket)
             wakeup_recipient_ids = [wakeup.recipient.pk for wakeup in wakeups]
@@ -173,6 +201,24 @@ class Recipient(models.Model):
 
         return Recipient.objects.filter(filters)
 
+
+    @staticmethod
+    def get_recipients_due_for_dailywakeup_processing(bucket):
+        # @todo incompatible with the idea of storing dailywakeup buckets and such
+        # in the DailyWakeupSubscription model.
+        """
+        Get all of the recipients that are due for a dailywakeup pull/dispatch.
+        Used by manage.py pull_content.
+        """
+
+        if daily_wakeup_bucket is not None:
+            wakeups = DailyWakeupSubscription.objects.filter(delivery_bucket=daily_wakeup_bucket)
+            wakeup_recipient_ids = [wakeup.recipient.pk for wakeup in wakeups]
+            filters = Q(bucket=bucket) | Q(pk__in=wakeup_recipient_ids)
+        else:
+            filters = Q(bucket=bucket)
+
+        return Recipient.objects.filter(filters)
 
 
 class TumblrSubscription(GenericSubscription):
@@ -271,8 +317,7 @@ class DailyWakeupSubscription(GenericSubscription):
         #@todo: calculate delivery_bucket based on the delivery time and recipient's timezone
         
         return super(DailyWakeupSubscription, self).save(*args, **kwargs)
-    
-        
+
     @property
     def timezone(self):
         return self.recipient.timezone
