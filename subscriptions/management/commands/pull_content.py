@@ -1,3 +1,7 @@
+from datetime import datetime
+from sanetime import time, delta
+from optparse import make_option
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
@@ -11,23 +15,36 @@ from django.db.models.query_utils import Q
 #3. for each of the recipients' subscriptions, call subscription.pull_content()
 #4. dispatch the content to the recipient's email address
 
-def get_current_bucket():
-    #@todo:  figure out which bucket the current run belongs to
-    return 1
 
-def get_current_daily_wakeup_bucket():
-    now = timezone.now().utcnow()
-    now += timezone.timedelta(minutes=90) #we do the daily wakeup pulls 90 minutes before delivery deadline
-    return now.hour
-    
+def get_current_bucket():
+    """
+    Returns the current bucket based on UTC time.
+
+    Return:
+        int. 0-47, where each int represents a ~30min span starting at midnight.
+    """
+    now = time(datetime.utcnow())
+    if now.minute < 30:
+        odd_bucket = 0
+    else:
+        odd_bucket = 1
+
+    return (now.hour * 2) + odd_bucket
+
 
 class Command(BaseCommand):
-    args = '<poll_id poll_id ...>'
-    help = 'Closes the specified poll for voting'
+    help = """By default, pulls and immediately dispatches longform content and queues
+Daily Wakeup content.  All Daily Wakeup content that should be delivered for
+the current bucket will also be dispatched unless this switch is invoked."""
+    args = ''
+    option_list = BaseCommand.option_list + (
+        make_option('--no-dispatch-daily-wakeup', default=True,
+                    action='store_false', dest='do_daily_wakeup',
+                    help="Do not dispatch all Daily Wakeup content queued for current bucket."),
+    )
 
     def handle(self, *args, **options):
         bucket = get_current_bucket()
-        daily_wakeup_bucket = get_daily_wakeup_bucket()
         #also include recipients that have a daily wakeup subscription 30-90 minutes from now
         recipients = Recipient.get_recipients_due_for_pull(bucket, daily_wakeup_bucket)
         
