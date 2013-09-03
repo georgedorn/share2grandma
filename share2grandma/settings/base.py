@@ -213,3 +213,12 @@ LOGGING = {
 
 
 TUMBLR_API_KEY = os.environ.get('TUMBLR_API_KEY')
+
+
+#Testing-related
+TEST_RUNNER = 'share2grandma.test_runner.AppTestSuiteRunner'
+TEST_IGNORE_APPS = ('django_extensions',)
+
+
+
+
