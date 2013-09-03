@@ -15,9 +15,14 @@ from timezone_field import TimeZoneField
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
+from django.core.mail import send_mail
+
 from pytumblr import TumblrRestClient
+
 from django.conf import settings
 from django.db.models.query_utils import Q
+
+import pytz
 
 
 class GenericSubscription(models.Model):
@@ -37,6 +42,9 @@ class GenericSubscription(models.Model):
     def pull_metadata(self):
         raise NotImplementedError
     
+    def format_content(self, content):
+        raise NotImplementedError
+    
 
 class Recipient(models.Model):
     sender = models.ForeignKey(User, related_name='recipients')
@@ -50,15 +58,18 @@ class Recipient(models.Model):
     timezone = TimeZoneField(default='America/Los_Angeles')
 
     dailywakeup_hour = models.IntegerField(null=True)       # for human use; requested local delivery hour
-    dailywakeup_bucket = models.IntegerField(null=True)     # calculated for dispatch use
-    morning_bucket = models.IntegerField(null=True)
-    evening_bucket = models.IntegerField(null=True)
-    wee_hours_bucket = models.IntegerField(null=True)
+    dailywakeup_bucket = models.IntegerField(null=True,
+                                             help_text="""Which bucket this user's dailywakeup should run for. 
+                                                         NULL means no daily wakeup.  This should be 90 minutes 
+                                                         before the actual daily_wakeup_hour."""
+                                             )
+    morning_bucket = models.IntegerField(null=True,
+                                         help_text="When to run the first content pull/push for the day.")
+    evening_bucket = models.IntegerField(null=True,
+                                         help_text="When to run the second content pull/push for the day.")
+    wee_hours_bucket = models.IntegerField(null=True,
+                                         help_text="When to run the third content pull/push for the day.")
 
-    # For weather with DailyWakeup ... @todo
-    # city
-    # state
-    # country - django-countries?
     postcode = models.CharField(null=True, blank=True, max_length=16)
 
     def get_absolute_url(self):
@@ -94,7 +105,7 @@ class Recipient(models.Model):
                                         vacations__end_date__gt=now).distinct()
 
     @property
-    def localnoon_bucket(timezone='America/Chicago'):
+    def localnoon_bucket(self, timezone_name='America/Chicago'):
         """
         Given a timezone, figure out local noon.  Convert that to UTC, then
         "bucketize" it, e.g. make it an integer from 0 to 47 where:
@@ -111,6 +122,8 @@ class Recipient(models.Model):
         Returns:
             int between 0 and 47.  See description.
         """
+        timezone = pytz.timezone(timezone_name)
+        
         now = time(datetime.now(tz=timezone))
         local_noon = time(now.year, now.month, now.day, 12, 0, 0, 0, now.tz)
         utc_noon = local_noon.set_tz('UTC')
@@ -120,8 +133,7 @@ class Recipient(models.Model):
         return localnoon_bucket
 
 
-    @staticmethod
-    def _calculate_dailywakeup_bucket(dailywakeup_hour=None):
+    def _calculate_dailywakeup_bucket(self, dailywakeup_hour=None):
         """
         Calculates the daily wakeup bucket for this recipient based on the
         Daily Wakeup delivery time specified by the User, and the Recipient's
@@ -137,7 +149,7 @@ class Recipient(models.Model):
                 Wakeup content should be aggregated from queue (if any) and dispatched.
                 90 minutes before the user's selected delivery time.
         """
-        now = time(datetime.now(tz=timezone))
+        now = time(datetime.now(tz=self.timezone))
         dailywakeup_hour = time(now.year, now.month, now.day, dailywakeup_hour, 0, 0, 0, now.tz)
         dailywakeup_dispatch_delta = delta(m=-90)
         dailywakeup_dispatch_hour = dailywakeup_hour + dailywakeup_dispatch_delta
@@ -190,35 +202,64 @@ class Recipient(models.Model):
         Get all of the recipients that are due for a content pull/dispatch.
         Used by manage.py pull_content.
         """
-
-        # @todo fix these renamed vars
-        if daily_wakeup_bucket is not None:
-            wakeups = DailyWakeupSubscription.objects.filter(delivery_bucket=daily_wakeup_bucket)
-            wakeup_recipient_ids = [wakeup.recipient.pk for wakeup in wakeups]
-            filters = Q(bucket=bucket) | Q(pk__in=wakeup_recipient_ids)
-        else:
-            filters = Q(bucket=bucket)
-
+        filters = Q(dailywakeup_bucket=bucket) | Q(morning_bucket=bucket) | Q(evening_bucket=bucket) | Q(wee_hours_bucket=bucket)
         return Recipient.objects.filter(filters)
-
-
-    @staticmethod
-    def get_recipients_due_for_dailywakeup_processing(bucket):
-        # @todo incompatible with the idea of storing dailywakeup buckets and such
-        # in the DailyWakeupSubscription model.
+    
+    
+    def deliver(self, bucket):
         """
-        Get all of the recipients that are due for a dailywakeup pull/dispatch.
-        Used by manage.py pull_content.
+        Run all of the recipient's subscriptions to pull content, format it for presto
+        and dispatch it.
         """
+        
+        for subscription_class in SUBSCRIPTION_CLASSES:
+            try:
+                #Get all of the recipient's tumblr subs.
+                subs = subscription_class.objects.filter(recipient=self)
+                for sub in subs:
+                    content = sub.pull_content()
+                    formatted_content = sub.format_content(content)
+                    self.dispatch(formatted_content)
+            except subscription_class.DoesNotExist:
+                pass #they don't have any of these
 
-        if daily_wakeup_bucket is not None:
-            wakeups = DailyWakeupSubscription.objects.filter(delivery_bucket=daily_wakeup_bucket)
-            wakeup_recipient_ids = [wakeup.recipient.pk for wakeup in wakeups]
-            filters = Q(bucket=bucket) | Q(pk__in=wakeup_recipient_ids)
-        else:
-            filters = Q(bucket=bucket)
+        #if the current run also matches the recipient's daily wakeup scheduled time, run it.
+        if self.dailywakeup_bucket == bucket:
+            try:
+                sub = DailyWakeupSubscription.objects.get(recipient=self)
+                content = sub.pull_content()
+                formatted_content = sub.format_content(content)
+                self.dispatch(formatted_content)
+            except (DailyWakeupSubscription.DoesNotExist, 
+                    DailyWakeupSubscription.MultipleObjectsReturned):
+                pass #something's broken, skip it.
 
-        return Recipient.objects.filter(filters)
+    def dispatch(self, content):
+        """
+        Sends content to this recipient's print queue.
+        
+        @todo: figure out a standard format for the results of format_content, extract it here to hand off to django's send_mail.
+        """
+        content = "".join(content)
+        
+        subject = ""
+        
+        destination = self.email
+
+        send_mail('Subject here', 'Here is the message.', 'from@example.com',
+                  ['to@example.com'], fail_silently=False)
+        
+
+#class SubscriptionBundle(object):
+#    
+#    def __init__(self, subscription_name,
+#                 contents, date_created, 
+#                 destination, sender):
+#        
+        
+
+
+
 
 
 class TumblrSubscription(GenericSubscription):
@@ -392,3 +433,8 @@ def create_user_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
 
 models.signals.post_save.connect(create_user_profile, sender=User)
+
+
+#a list of all of the subscription classes, used by deliver() for priority.
+#DailyWakeUp is not included and is called manually at the end of deliver().
+SUBSCRIPTION_CLASSES = [TumblrSubscription, ]
