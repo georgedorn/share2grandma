@@ -47,6 +47,8 @@ MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 
 #Debug toolbar stuff.  If we're using local.py, we want the toolbar.  Nevermind the IP address nonsense.
 def custom_show_toolbar(request):
+    if request.META['SERVER_NAME'] == 'testserver':
+        return False #don't show debug in html output when running tests
     return True  # Always show toolbar, for example purposes only.
 
 DEBUG_TOOLBAR_CONFIG = {
