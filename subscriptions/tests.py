@@ -157,8 +157,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.client.login(**self.userdata)
 
         res = self.client.post(self.url_subscription_create_tumblr,
-            {'    ':self.user.pk,
-             'recipient':self.recipient.pk,
+            {'recipient':self.recipient.pk,
              'short_name':'demo',
              'enabled':True},
             follow=True)
@@ -375,15 +374,20 @@ class RecipientTest(SubscriptionTestCase):
     def test_detail_view(self):
         """
         Test that the Recipient detail view displays the right stuff
+
+        @todo:  This is extremely fragile and should be rewritten to test fields explicitly
         """
         self.client.login(**self.userdata)
 
         res = self.client.get(reverse('recipient_detail', kwargs={'pk':self.recipient.pk}),
             follow=True)
 
-        for field in self.recipient._meta.fields:
-            v = getattr(self.recipient, field.name)
-
+        expected_fields = ('sender_name', 'sender_phone', 'name', 'add_date',
+                           'email', 'postcode')
+        
+        for field in expected_fields:
+            v = getattr(self.recipient, field)
+            
             self.assertTrue(str(v) in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content %s" % (v, field, res.content))
 
@@ -395,16 +399,19 @@ class RecipientTest(SubscriptionTestCase):
     def test_dashboard_recipient_display(self):
         """
         Test that the Recipient shows up on the dashboard
+        
+        @todo:  This is extremely fragile and should be rewritten to test fields explicitly
         """
         self.client.login(**self.userdata)
 
         res = self.client.get(reverse('dashboard_main'), follow=True)
-
-        for field in self.recipient._meta.fields:
-            v = getattr(self.recipient, field.name)
-
-            if field.name == 'timezone':
-                continue    # not currently displayed.
+        
+        
+        expected_fields = ('sender_name', 'sender_phone', 'name', 'add_date',
+                           'email', 'postcode')
+        
+        for field in expected_fields:
+            v = getattr(self.recipient, field)
 
             self.assertTrue(str(v) in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
