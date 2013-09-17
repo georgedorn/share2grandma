@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+    <h1>{% trans "Connected Services" noop %}</h1>
+
+    <ul>
+        {% for service_abbreviation, service_title in all_services %}
+            <li>
+                {% if service_abbreviation in connected_services %}
+                    Connected with {{service_title}}
+                    <form action="{% url "socialauth_disconnect" backend=service_abbreviation %}" method="POST">
+                        {% csrf_token %}
+                        <input type='submit' value='disconnect'>
+                    </form>
+                    </a>
+                {% else %}
+                    <a href="{% url 'socialauth_begin' backend=service_abbreviation %}">
+                        Connect with {{service_title}}
+                    </a>
+                {% endif %}
+            </li>
+        {% endfor %}
+
+        {% for social_auth in object_list %}
+            <dt class="top"><br>Provider</dt>
+            <dd>{{social_auth.provider}}</dd>
+            <dt class="top"><br>Account</dt>
+            <dd>{{social_auth.uid}}</dd>
+        </a>
+        {% endfor %}
+    </ul>
+    
+{% endblock %}

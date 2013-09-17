@@ -52,7 +52,7 @@ def custom_show_toolbar(request):
     return True  # Always show toolbar, for example purposes only.
 
 DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': True,
+    'INTERCEPT_REDIRECTS': False,
     'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
     'ENABLE_STACKTRACES' : True,
 }
