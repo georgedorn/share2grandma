@@ -5,18 +5,18 @@
     <h1>{% trans "Connected Services" noop %}</h1>
 
     <ul>
-        {% for service_abbreviation, service_title in all_services %}
+        {% for service_abbreviation, details in all_services %}
             <li>
                 {% if service_abbreviation in connected_services %}
-                    Connected with {{service_title}}
-                    <form action="{% url "socialauth_disconnect" backend=service_abbreviation %}" method="POST">
+                    Connected with {{details.name}}
+                    <form action="{{details.disconnect_url}}" method="POST">
                         {% csrf_token %}
                         <input type='submit' value='disconnect'>
                     </form>
                     </a>
                 {% else %}
-                    <a href="{% url 'socialauth_begin' backend=service_abbreviation %}">
-                        Connect with {{service_title}}
+                    <a href="{{details.connect_url}}">
+                        Connect with {{details.name}}
                     </a>
                 {% endif %}
             </li>
