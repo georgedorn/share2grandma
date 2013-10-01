@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.views.generic import ListView, CreateView, DetailView, DeleteView
-from django.http.response import HttpResponseRedirect, Http404
+from django.http.response import HttpResponseRedirect
 from django.core.urlresolvers import reverse_lazy
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
