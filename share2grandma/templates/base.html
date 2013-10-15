@@ -19,14 +19,13 @@
 {% else %}<a href="{% url "auth_login" %}">{% trans "Login" noop %}</a>
 {% endif %}
 <dl>
-    <dt><a href="{% url "dashboard_main" %}">{% trans Dashboard %}</a></dt>
-    <dt><a href="{% url "recipient_create" %}">{% trans Add a Recipient %}</a></dt>
-    <dt><a href="{% url "subscription_create_tumblr" %}">{% trans Add Subscription %}</a></dt>
-    <dt><a href="{% url "subscription_list" %}">{% trans Subscription List %}</a></dt>
+    <dt><a href="{% url "dashboard_main" %}">{% trans "Dashboard" %}</a></dt>
+    <dt><a href="{% url "recipient_create" %}">{% trans "Add a Recipient" %}</a></dt>
+    <dt><a href="{% url "subscription_create_tumblr" %}">{% trans "Add Subscription" %}</a></dt>
+    <dt><a href="{% url "subscription_list" %}">{% trans "Subscription List" %}</a></dt>
 </dl>
 </div>
 {% endblock %}
 {% block content %}{% endblock %}
 </body>
 </html>
-
