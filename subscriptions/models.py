@@ -23,6 +23,7 @@ from django.conf import settings
 from django.db.models.query_utils import Q
 
 import pytz
+from django.template.loader import render_to_string
 
 
 class GenericSubscription(models.Model):
@@ -369,6 +370,21 @@ class DailyWakeupSubscription(GenericSubscription):
     def __unicode__(self):
         # so it's intelligible in the django admin
         return "%s (DailyWakeup) sub for %s" % (self.short_name, self.user)
+    
+    def pull_content(self):
+        """
+        Returns content from a daily wakeup subscription.
+        
+        @todo: read DailyWakeupContent objects for actual content.
+        """
+        timezone = self.recipient.timezone
+        current_time = timezone.localize(datetime.now())
+        result = render_to_string('subscriptions/email/daily_wakeup.txt', {'now':current_time})
+        return result
+
+    def format_content(self, content):
+        return content
+        
 
 admin.site.register(DailyWakeupSubscription)
 
