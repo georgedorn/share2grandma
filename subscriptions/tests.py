@@ -1,6 +1,6 @@
 import re
+from datetime import date
 from datetime import datetime, timedelta
-
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test import TestCase
@@ -12,6 +12,8 @@ import pytz
 import locale
 
 from subscriptions.forms import VacationForm
+from django.template.context import Context
+from django.template.base import Template
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
@@ -78,6 +80,13 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
     
 class SubscriptionTestCase(TestCase):
+
+    def render_variable_in_template(self, variable):
+        t = Template('{{ variable }}')
+        c = Context({"variable": variable})
+        return t.render(c)
+
+    
     def setUp(self):
         self.userdata = {'username':'xenuuu',
                          'password':'test_pass'}
@@ -387,10 +396,9 @@ class RecipientTest(SubscriptionTestCase):
         
         for field in expected_fields:
             v = getattr(self.recipient, field)
-            
-            self.assertTrue(str(v) in res.rendered_content,
+            rendered_variable = self.render_variable_in_template(v)
+            self.assertTrue(rendered_variable in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content %s" % (v, field, res.content))
-
 
     def test_detail_view_somebody_elses_recipient(self):
         self.skipTest('writeme')
@@ -412,8 +420,9 @@ class RecipientTest(SubscriptionTestCase):
         
         for field in expected_fields:
             v = getattr(self.recipient, field)
+            rendered = self.render_variable_in_template(v)
 
-            self.assertTrue(str(v) in res.rendered_content,
+            self.assertTrue(rendered in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
     def test_calculate_localnoon_bucket_string_timezone(self):
