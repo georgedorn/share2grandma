@@ -94,6 +94,23 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
 class VacationDeleteView(LoginRequiredMixin, DeleteView):
     model = Vacation
     success_url = reverse_lazy('dashboard_main')
+
+    def get_vacation(self, request):
+        """
+        Returns the vacation associated with the the url;
+        also triggers a 404 if the vacation doesn't exist or
+        is for a recipient that doesn't belong to the current user.
+        """
+        qs = Vacation.objects.filter(recipient__sender=request.user)
+        vacation = self.get_object(qs)
+        return vacation
+
+    def get(self, request, *args, **kwargs):
+        """
+        Override default get() to do quick permission check.
+        """
+        self.get_vacation(request)
+        return super(VacationDeleteView, self).get(request, *args, **kwargs)
     
     def delete(self, request, *args, **kwargs):
         """
@@ -104,9 +121,8 @@ class VacationDeleteView(LoginRequiredMixin, DeleteView):
 
         #get_object takes a queryset, so we're going to pre-filter it to ensure the
         #recipient belongs to the logged-in user
-        qs = Vacation.objects.filter(recipient__sender=request.user)
-        vacation = self.get_object(qs)
-        
+        vacation = self.get_vacation(request)
+                
         if vacation.start_date < now:
             #This vacation has started, so we end it by moving the end date.
             vacation.end_date = now
@@ -116,4 +132,3 @@ class VacationDeleteView(LoginRequiredMixin, DeleteView):
             vacation.delete()
 
         return HttpResponseRedirect(self.get_success_url())
-    
