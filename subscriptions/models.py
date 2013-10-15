@@ -7,23 +7,21 @@ from django.db import models
 from django.contrib import admin
 from django.core.urlresolvers import reverse
 from django.utils import timezone
+from django.utils import translation
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models.query_utils import Q
+from django.template.loader import render_to_string
 
+import pytz
 from sanetime import time, delta
 #from sanetime.dj import SaneTimeField
 from timezone_field import TimeZoneField
 
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
-from django.core.mail import send_mail
-
 from pytumblr import TumblrRestClient
-
-from django.conf import settings
-from django.db.models.query_utils import Q
-
-import pytz
-from django.template.loader import render_to_string
 
 
 class GenericSubscription(models.Model):
@@ -57,6 +55,8 @@ class Recipient(models.Model):
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
+    language = CharField(default='en-us', max_length=12)
+    temperature = CharField(default='F', max_length=1)
 
     dailywakeup_hour = models.IntegerField(null=True)       # for human use; requested local delivery hour
     dailywakeup_bucket = models.IntegerField(null=True,
@@ -157,6 +157,15 @@ class Recipient(models.Model):
         return dailywakeup_dispatch_hour.hour * 2
 
 
+    def set_dailywakeup_bucket(self, delete=False):
+		if delete:
+			self.dailywakeup_bucket = None
+		else:
+			self.dailywakeup_bucket = self._calculate_dailywakeup_bucket(self.dailywakeup_hour)
+
+		self.save()
+
+
     @staticmethod
     def _calculate_delivery_buckets(localnoon_bucket=36):
         """
@@ -242,13 +251,11 @@ class Recipient(models.Model):
         @todo: figure out a standard format for the results of format_content, extract it here to hand off to django's send_mail.
         """
         content = "".join(content)
-        
-        subject = ""
-        
+        subject = "Your Share2Grandma update from plugin_name"
         destination = self.email
 
-        send_mail('Subject here', 'Here is the message.', 'from@example.com',
-                  ['to@example.com'], fail_silently=False)
+        send_mail(subject, content, self.sender.profile.s2g_email,
+                  [self.email], fail_silently=False)
         
 
 #class SubscriptionBundle(object):
@@ -356,9 +363,16 @@ class DailyWakeupSubscription(GenericSubscription):
     delivery_bucket = models.IntegerField() #hour, from 0-23, in UTC
     
     def save(self, *args, **kwargs):
-        #@todo: calculate delivery_bucket based on the delivery time and recipient's timezone
+		self.recipient.set_dailywakeup_bucket()
         
         return super(DailyWakeupSubscription, self).save(*args, **kwargs)
+
+
+    def delete(self, *args, **kwargs):
+		self.recipient.set_dailywakeup_bucket(delete=True)
+
+		return super(DailyWakeupSubscription, self).delete(*args, **kwargs)
+		
 
     @property
     def timezone(self):
@@ -379,6 +393,7 @@ class DailyWakeupSubscription(GenericSubscription):
         """
         timezone = self.recipient.timezone
         current_time = timezone.localize(datetime.now())
+        translation.activate(recipient.language)
         result = render_to_string('subscriptions/email/daily_wakeup.txt', {'now':current_time})
         return result
 

@@ -25,6 +25,7 @@ the current bucket will also be dispatched unless this switch is invoked."""
                     help="Do not dispatch all Daily Wakeup content queued for current bucket."),
     )
 
+
     def handle(self, *args, **options):
         bucket = get_current_bucket()
         recipients = Recipient.get_recipients_due_for_processing(bucket)

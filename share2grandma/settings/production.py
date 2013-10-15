@@ -15,9 +15,8 @@ ALLOWED_HOSTS = [
 
 ]
 
-#todo:  figure this out
-#EMAIL_HOST = "localhost"
-#EMAIL_PORT = 1025
+EMAIL_HOST = "localhost"
+EMAIL_PORT = 25
 
 DB_USER = 's2g'
 

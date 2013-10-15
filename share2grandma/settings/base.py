@@ -26,6 +26,14 @@ TIME_ZONE = 'America/Los_Angeles'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
 
+gettext = lambda s : s
+LANGUAGES = [
+			  ('es', gettext('European Spanish')),
+			  ('es-mx', gettext('Mexican Spanish')),
+			  ('en-us', gettext('American English')),
+			  ('en-gb', gettext('British English')),
+			]
+
 SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
@@ -34,7 +42,7 @@ USE_I18N = True
 
 # If you set this to False, Django will not format dates, numbers and
 # calendars according to the current locale.
-USE_L10N = False
+USE_L10N = True
 
 DATE_FORMAT = "Y-m-d"
 
