@@ -55,8 +55,8 @@ class Recipient(models.Model):
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
     timezone = TimeZoneField(default='America/Los_Angeles')
-    language = CharField(default='en-us', max_length=12)
-    temperature = CharField(default='F', max_length=1)
+    language = models.CharField(default='en-us', max_length=12)
+    temperature = models.CharField(default='F', max_length=1)
 
     dailywakeup_hour = models.IntegerField(null=True)       # for human use; requested local delivery hour
     dailywakeup_bucket = models.IntegerField(null=True,
@@ -158,12 +158,12 @@ class Recipient(models.Model):
 
 
     def set_dailywakeup_bucket(self, delete=False):
-		if delete:
-			self.dailywakeup_bucket = None
-		else:
-			self.dailywakeup_bucket = self._calculate_dailywakeup_bucket(self.dailywakeup_hour)
+        if delete:
+            self.dailywakeup_bucket = None
+        else:
+            self.dailywakeup_bucket = self._calculate_dailywakeup_bucket(self.dailywakeup_hour)
 
-		self.save()
+        self.save()
 
 
     @staticmethod
@@ -363,16 +363,15 @@ class DailyWakeupSubscription(GenericSubscription):
     delivery_bucket = models.IntegerField() #hour, from 0-23, in UTC
     
     def save(self, *args, **kwargs):
-		self.recipient.set_dailywakeup_bucket()
-        
+        self.recipient.set_dailywakeup_bucket()
         return super(DailyWakeupSubscription, self).save(*args, **kwargs)
 
 
     def delete(self, *args, **kwargs):
-		self.recipient.set_dailywakeup_bucket(delete=True)
+        self.recipient.set_dailywakeup_bucket(delete=True)
 
-		return super(DailyWakeupSubscription, self).delete(*args, **kwargs)
-		
+        return super(DailyWakeupSubscription, self).delete(*args, **kwargs)
+
 
     @property
     def timezone(self):
@@ -393,7 +392,7 @@ class DailyWakeupSubscription(GenericSubscription):
         """
         timezone = self.recipient.timezone
         current_time = timezone.localize(datetime.now())
-        translation.activate(recipient.language)
+        translation.activate(self.recipient.language)
         result = render_to_string('subscriptions/email/daily_wakeup.txt', {'now':current_time})
         return result
 
