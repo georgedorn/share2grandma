@@ -1,6 +1,9 @@
 share2grandma
 ==============
 
+[![Build Status](https://travis-ci.org/gordon-morehouse/share2grandma.png)](https://travis-ci.org/gordon-morehouse/share2grandma)
+[![Coverage Status](https://coveralls.io/repos/gordon-morehouse/share2grandma/badge.png)](https://coveralls.io/r/gordon-morehouse/share2grandma)
+
 What if you could make a tumblr, or a flickr, or a google calendar and post stuff to it, and every day those posts (not video/audio) would pop out of grandma's printer? What if the printer were self-contained and grandma didn't need a computer?
 
 License
