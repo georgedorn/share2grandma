@@ -4,5 +4,9 @@ python:
 
 
 #install deps
-install: "pip install -r requirements.txt --use-mirrors"
+install: 
+  - pip install -r requirements.txt --use-mirrors
+  - pip install coverage coveralls --use-mirrors
 script: "./manage.py test --settings=share2grandma.settings.travis"
+after_success:
+  - coveralls
