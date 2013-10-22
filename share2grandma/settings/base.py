@@ -122,6 +122,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     ### 3rd party
     'django.contrib.sites',
+    'accounts',
     'social_auth',
     'south',
     'registration',
