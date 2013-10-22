@@ -1,8 +1,6 @@
 """
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
+Tests of the account app, particularly the Social Auth management pages that aren't
+part of django-social-auth.
 """
 
 from django.test import TestCase
@@ -36,9 +34,13 @@ class TestAccountAuthServices(TestCase):
             self.assertTrue(auth_begin_url in res.content)
             
 
-    def test_logged_in_tumblr(self):
+    def test_logged_in_one_service(self):
         """
         Fake being logged in via tumlbr, then check the auth list.
+        
+        Given that this doesn't talk to any remote services, this will be roughly the same
+        regardless of which service we're pretending this is.  Tumblr just happens to be
+        the easiest.
         """
         UserSocialAuth.objects.create(user=self.user,
                                       provider='tumblr',

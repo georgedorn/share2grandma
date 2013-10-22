@@ -36,6 +36,12 @@ class ServicesListView(LoginRequiredMixin, ListView):
         return user.social_auth.all()
     
     def get_context_data(self, *args, **kwargs):
+        """
+        Extra variables to pass to template.
+        
+        Specifically, a set of all currently-logged-in services
+        and a list of all possible services (as specified in AUTH_SERVICES).
+        """
         context = super(ServicesListView, self).get_context_data(*args, **kwargs)
         logged_in_accounts = context['object_list']
         logged_in_providers = [service.provider for service in logged_in_accounts]
@@ -52,8 +58,3 @@ class ServicesListView(LoginRequiredMixin, ListView):
         context['all_services'] = AUTH_SERVICES.items()
 
         return context 
-            
-        
-
-    
-

@@ -8,6 +8,11 @@ import sys, os
 devnull = open(os.devnull, 'w')
 
 class RedirectStdStreams(object):
+    """
+    Context manager to send stderr/stdout somewhere else (e.g. devnull) for the duration of the context.
+    
+    Used to silence south printing error messages even if DatabaseError is caught.
+    """
     def __init__(self, stdout=None, stderr=None):
         self._stdout = stdout or sys.stdout
         self._stderr = stderr or sys.stderr
@@ -28,7 +33,7 @@ class Migration(SchemaMigration):
         # Moving Profile from subscriptions to accounts. 
         # Or, if it doesn't exist due to order of events, just create it.
         try:
-            with RedirectStdStreams(stdout=devnull, stderr=devnull):
+            with RedirectStdStreams(stdout=devnull, stderr=devnull): #next command prints to stderr without this context manager.
                 db.rename_table('subscriptions_profile', 'accounts_profile')                                                                                                                        
         except DatabaseError:
             # Adding model 'Profile'
@@ -42,7 +47,8 @@ class Migration(SchemaMigration):
     def backwards(self, orm):
         # Moving Profile from accounts to subscriptions    
         try:
-            db.rename_table('accounts_profile', 'subscriptions_profile')                                                                                                                        
+            with RedirectStdStream(stdout=devnull, stderr=devnull): #next command prints to stderr without this context manager.
+                db.rename_table('accounts_profile', 'subscriptions_profile')                                                                                                                        
         except DatabaseError:
             db.create_table(u'subscriptions_profile', (
                 (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),

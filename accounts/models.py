@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 import uuid
 
-# @todo a lot of random shit is getting dumped into subscriptions.models....
 class Profile(models.Model):
     """
     Extend User with moar information.

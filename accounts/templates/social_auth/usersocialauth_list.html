@@ -2,30 +2,33 @@
 {% load i18n %}
 
 {% block content %}
-    <h1>{% trans "Connected Services" noop %}</h1>
-
+    <h1>{% trans "Connected Services" %}</h1>
     <ul>
         {% for service_abbreviation, details in all_services %}
             <li>
                 {% if service_abbreviation in connected_services %}
+                    {% blocktrans with name=details.name %}
                     Connected with {{details.name}}
+                    {% endblocktrans %}
                     <form action="{{details.disconnect_url}}" method="POST">
                         {% csrf_token %}
-                        <input type='submit' value='disconnect'>
+                        <input type='submit' value='{% trans "disconnect" %}'>
                     </form>
                     </a>
                 {% else %}
                     <a href="{{details.connect_url}}">
-                        Connect with {{details.name}}
+                    {% blocktrans with name=details.name %}
+                        Connect with {{name}}
+                    {% endblocktrans %}
                     </a>
                 {% endif %}
             </li>
         {% endfor %}
 
         {% for social_auth in object_list %}
-            <dt class="top"><br>Provider</dt>
+            <dt class="top"><br>{% trans "Provider" noop %}</dt>
             <dd>{{social_auth.provider}}</dd>
-            <dt class="top"><br>Account</dt>
+            <dt class="top"><br>{% trans "Account" noop %}</dt>
             <dd>{{social_auth.uid}}</dd>
         </a>
         {% endfor %}
