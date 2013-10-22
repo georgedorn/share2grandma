@@ -393,7 +393,7 @@ class DailyWakeupSubscription(GenericSubscription):
         timezone = self.recipient.timezone
         current_time = timezone.localize(datetime.now())
         translation.activate(self.recipient.language)
-        result = render_to_string('subscriptions/email/daily_wakeup.txt', {'now':current_time})
+        result = render_to_string('subscriptions/email/daily_wakeup.html', {'now':current_time})
         return result
 
     def format_content(self, content):
