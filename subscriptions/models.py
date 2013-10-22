@@ -254,7 +254,7 @@ class Recipient(models.Model):
         subject = "Your Share2Grandma update from plugin_name"
         destination = self.email
 
-        send_mail(subject, content, self.sender.profile.s2g_email,
+        send_mail(subject, content, self.sender.s2g_profile.s2g_email,
                   [self.email], fail_silently=False)
         
 
