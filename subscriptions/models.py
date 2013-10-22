@@ -15,6 +15,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models.query_utils import Q
 from django.template.loader import render_to_string
+from django.contrib.sites.models import Site
 
 import pytz
 from sanetime import time, delta
@@ -253,9 +254,12 @@ class Recipient(models.Model):
         content = "".join(content)
         subject = "Your Share2Grandma update from plugin_name"
         destination = self.email
-
-        send_mail(subject, content, self.sender.s2g_profile.s2g_email,
-                  [self.email], fail_silently=False)
+        site = Site.objects.get(pk=settings.SITE_ID)
+        from_address = "%s@%s" % (self.sender.s2g_profile.s2g_email,
+                                  site.domain)
+        
+        send_mail(subject, content, from_address,
+                  [destination], fail_silently=False)
         
 
 #class SubscriptionBundle(object):
