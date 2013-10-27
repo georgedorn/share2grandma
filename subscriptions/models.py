@@ -23,6 +23,8 @@ from sanetime import time, delta
 from timezone_field import TimeZoneField
 
 from pytumblr import TumblrRestClient
+from django.utils.html import strip_tags
+from django.core.mail.message import EmailMultiAlternatives
 
 
 class GenericSubscription(models.Model):
@@ -252,15 +254,16 @@ class Recipient(models.Model):
         @todo: figure out a standard format for the results of format_content, extract it here to hand off to django's send_mail.
         """
         content = "".join(content)
+        text_content = strip_tags(content)
         subject = "Your Share2Grandma update from plugin_name"
         destination = self.email
         site = Site.objects.get(pk=settings.SITE_ID)
         from_address = "%s@%s" % (self.sender.s2g_profile.s2g_email,
                                   site.domain)
-        
-        send_mail(subject, content, from_address,
-                  [destination], fail_silently=False)
-        
+        email = EmailMultiAlternatives(subject, text_content, from_address,
+                                       [destination])
+        email.attach_alternative(content, mimetype='text/html')
+        email.send()
 
 #class SubscriptionBundle(object):
 #    

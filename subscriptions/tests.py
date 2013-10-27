@@ -3,6 +3,7 @@ from datetime import date
 from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.core import mail
 from django.test import TestCase
 from django.utils import timezone as dutz
 
@@ -14,6 +15,26 @@ import locale
 from subscriptions.forms import VacationForm
 from django.template.context import Context
 from django.template.base import Template
+from subscriptions.models import GenericSubscription
+
+class GenericSubscriptionTest(TestCase):
+    """
+    Tests of the generic subscription model.
+    Probably silly, other than proving the API.
+    """
+    
+    def test_pull_content(self):
+        foo = GenericSubscription()
+        self.assertRaises(NotImplementedError, foo.pull_content)
+        
+    def test_pull_metadata(self):
+        foo = GenericSubscription()
+        self.assertRaises(NotImplementedError, foo.pull_metadata)
+    
+    def test_format_content(self):
+        foo = GenericSubscription()
+        self.assertRaises(NotImplementedError, foo.format_content, "This is content")
+
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
@@ -443,6 +464,83 @@ class RecipientTest(SubscriptionTestCase):
 
     def test_calculate_delivery_buckets_no_args(self):
         self.skipTest('writeme')
+        
+    def test_set_dailywakeup_bucket(self):
+        self.recipient.dailywakeup_hour = 6
+        self.recipient.dailywakeup_bucket = None #redundant, but in case we change the init logic
+        self.recipient.set_dailywakeup_bucket(delete=False)
+        self.assertTrue(self.recipient.dailywakeup_bucket is not None) #@todo: once bucket logic is settled, test the actual value
+        
+    def test_set_dailywakeup_bucket_delete(self):
+        self.recipient.dailywakeup_hour = 6
+        self.recipient.dailywakeup_bucket = 12 #arbitrary
+        self.recipient.save()
+        self.recipient.set_dailywakeup_bucket(delete=True)
+        self.assertTrue(self.recipient.dailywakeup_bucket is None)
+
+    def test_get_recipients_due_for_processing(self):
+        """
+        Just a simple test of the query, not the bucket logic itself.
+        """
+        Recipient.objects.all().delete() #@todo: move this into another test case that doesn't create Recipient objects by default and remove this line
+        self.recipients = []
+        for i in range(10):
+            recip = Recipient(sender=self.user,
+                              name="Recip%s" % i,
+                              email='recip%s@yahoo.com' % i,
+                              postcode='11111',
+                              )
+            #these buckets make no sense, but we're testing the query and need some overlay
+            recip.dailywakeup_bucket = i / 2 
+            recip.morning_bucket = 3 + i / 2
+            recip.evening_bucket = 6 + i / 3 
+            recip.wee_hours_bucket = 9 + i / 3 
+            recip.save()
+
+        #the results of the above mess, 
+        #    D M E W
+        #    0 3 6 9
+        #    0 3 6 9
+        #    1 4 6 9
+        #    1 4 7 10
+        #    2 5 7 10
+        #    2 5 7 10
+        #    3 6 8 11
+        #    3 6 8 11
+        #    4 7 8 11
+        #    4 7 9 12
+
+        #and this is how many recipients have at least one bucket set to each value (e.g. 2 recipients have a 0 bucket            
+        expected = {0:2, 1:2, 2:2, 3:4, 4:4, 5:2, 6:5, 
+                    7:5, 8:3, 9:4, 10:3, 11:3, 12:1
+                   }
+
+        for bucket, count in expected.items():
+            due_count = Recipient.get_recipients_due_for_processing(bucket).count()
+            try:
+                self.assertEqual(due_count, count, 
+                         "Expected %s recipients in bucket %s, got %s" % (count, bucket, due_count))
+            except AssertionError, e:
+                print e
+                for recip in Recipient.objects.all():
+                    print recip.dailywakeup_bucket, recip.morning_bucket, recip.evening_bucket, recip.wee_hours_bucket
+                raise
+
+    def test_dispatch(self):
+        self.recipient.dispatch("This is the content")
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.body, "This is the content")
+        self.assertTrue(msg.from_email.startswith(self.recipient.sender.s2g_profile.s2g_email))
+        self.assertEqual(msg.to, [self.recipient.email])
+        #@todo: subject line?
+        
+
+    def test_deliver_non_daily_wakeup(self):
+        """
+        Test that a tumblr subscription item is delivered.
+        """
+        pass
 
 
 class VacationTests(SubscriptionTestCase):
