@@ -313,10 +313,12 @@ class TumblrSubscription(GenericSubscription):
         done_queueing = False
 
         while not done_queueing:
-            twenty_posts = self.client.posts(self.short_name,
+            resp = client.posts(self.short_name,
                                              limit=20,
-                                             offset=len(post_list))['posts']
-
+                                             offset=len(post_list))
+            twenty_posts = resp['posts']
+            if len(twenty_posts) < 20:
+                done_queueing = True #we hit the last message in this request, so stop when done processing this batch
             for post in twenty_posts:
                 # Step 3: and stop when we see one <= self.subscription.last_poll_time
 
@@ -324,9 +326,17 @@ class TumblrSubscription(GenericSubscription):
                     done_queueing = True #checked by while loop
                     break
                 else:
-                    self.tumblr_post_list.append(post)
+                    post_list.append(post)
 
         return post_list
+    
+    def format_content(self, content):
+        """
+        Given a dict from the tumblr client, render the tumblr_post template and return it.
+        """
+        translation.activate(self.recipient.language)
+        result = render_to_string('subscriptions/email/tumblr_post.html', {'post_list':content})
+        return result
 
     
     def pull_metadata(self, save=False):

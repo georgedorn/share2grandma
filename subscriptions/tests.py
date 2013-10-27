@@ -540,9 +540,21 @@ class RecipientTest(SubscriptionTestCase):
         """
         Test that a tumblr subscription item is delivered.
         """
-        pass
+        subscription = TumblrSubscription.objects.create(recipient=self.recipient,
+                                          short_name='demo',
+                                          pretty_name='demo',
+                                          )
+        self.recipient.deliver(0)
 
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
 
+        self.assertTrue("Lorem ipsum dolor sit amet" in msg.body)
+
+        html = msg.alternatives[0][0]
+        self.assertTrue("Lorem ipsum dolor sit amet" in html)
+
+        
 class VacationTests(SubscriptionTestCase):
     
     def test_not_on_vacation(self):
