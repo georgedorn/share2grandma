@@ -349,10 +349,7 @@ class RecipientTest(SubscriptionTestCase):
             granny_data,
             follow=True)
 
-        self.assertEqual(Recipient.objects.count(), 2)  # includes fixture
-
         obj = Recipient.objects.get(name='Granny Em')
-        self.assertTrue(isinstance(obj, Recipient))
 
         success = False
         for url, status in res.redirect_chain:
@@ -361,6 +358,7 @@ class RecipientTest(SubscriptionTestCase):
                     # this redirect chain is a bit weird and might change, so be flexible..
                     # we got redirected to the detail url for what we just created, so yay
                     success = True
+                    break
         self.assertTrue(success)
 
         granny_data.pop('sender')     # not looking for pk in output
@@ -370,6 +368,35 @@ class RecipientTest(SubscriptionTestCase):
             self.assertTrue(s in res.rendered_content,
                             'Expected "%s" in rendered_content' % s)
 
+    def test_create_via_ui_with_dailywakeup(self):
+        """
+        Another test of creation, this time ensuring that setting a daily wakeup time
+        also results in the user showing up in the daily wakeup batch.
+        """
+        self.client.login(**self.userdata)
+
+        granny_data = \
+            {'sender':self.user.pk, #@todo: Sender is not posted, should be in request
+             'sender_name':'bobby',
+             'sender_phone':'111-222-3344',
+             'name':'Granny Em',
+             'email':'emgran@aol.com',
+             'timezone':'America/Indiana/Knox',
+             'dailywakeup_hour':'6'
+             }
+
+        res = self.client.post(self.url_recipient_create,
+            granny_data,
+            follow=True)
+
+        self.assertEqual(Recipient.objects.count(), 2)  # includes fixture
+
+        obj = Recipient.objects.get(name='Granny Em')
+        dailywakeup_bucket = obj.dailywakeup_bucket
+        self.assertTrue(dailywakeup_bucket is not None)
+        
+        self.assertTrue(obj in Recipient.get_recipients_due_for_processing(bucket=dailywakeup_bucket))
+        
 
     def test_delete(self):
         """
