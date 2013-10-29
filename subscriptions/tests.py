@@ -349,7 +349,7 @@ class RecipientTest(SubscriptionTestCase):
             granny_data,
             follow=True)
 
-        self.assertTrue(Recipient.objects.count() == 2)  # includes fixture
+        self.assertEqual(Recipient.objects.count(), 2)  # includes fixture
 
         obj = Recipient.objects.get(name='Granny Em')
         self.assertTrue(isinstance(obj, Recipient))

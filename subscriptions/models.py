@@ -16,6 +16,7 @@ from django.conf import settings
 from django.db.models.query_utils import Q
 from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
+from django.utils.translation import ugettext as _
 
 import pytz
 from sanetime import time, delta
@@ -47,6 +48,13 @@ class GenericSubscription(models.Model):
     def format_content(self, content):
         raise NotImplementedError
     
+DAILYWAKEUP_HOUR_CHOICES = [(None, "No Wakeup"),
+                            (0, "Midnight")]
+for i in range(1, 12): #1 to 11
+    DAILYWAKEUP_HOUR_CHOICES.append((i, "%s am" % i))
+DAILYWAKEUP_HOUR_CHOICES.append((12, 'noon'))
+for i in range(13, 24 ): #13 to 23
+    DAILYWAKEUP_HOUR_CHOICES.append((i, '%s pm' % i))
 
 class Recipient(models.Model):
     sender = models.ForeignKey(User, related_name='recipients')
@@ -61,7 +69,11 @@ class Recipient(models.Model):
     language = models.CharField(default='en-us', max_length=12)
     temperature = models.CharField(default='F', max_length=1)
 
-    dailywakeup_hour = models.IntegerField(null=True)       # for human use; requested local delivery hour
+    dailywakeup_hour = models.IntegerField(null=True,
+                                        help_text=_("The time, in the recipient's timezone, to send a wakeup job."),
+                                        choices=DAILYWAKEUP_HOUR_CHOICES,
+                                        default=None, blank=True
+                                        )       # for human use; requested local delivery hour
     dailywakeup_bucket = models.IntegerField(null=True,
                                              help_text="""Which bucket this user's dailywakeup should run for. 
                                                          NULL means no daily wakeup.  This should be 90 minutes 
@@ -160,13 +172,19 @@ class Recipient(models.Model):
         return dailywakeup_dispatch_hour.hour * 2
 
 
-    def set_dailywakeup_bucket(self, delete=False):
+    def set_dailywakeup_bucket(self, delete=False, save=False):
+        """
+        Sets or deletes the dailywakeup bucket according to the hour.
+        Note:  Does not call save() under most normal circumstances, so it's up
+        to the caller to save the recipient.
+        """
         if delete:
             self.dailywakeup_bucket = None
         else:
             self.dailywakeup_bucket = self._calculate_dailywakeup_bucket(self.dailywakeup_hour)
-
-        self.save()
+            
+        if save:
+            self.save()
 
 
     @staticmethod
@@ -199,6 +217,10 @@ class Recipient(models.Model):
 
 
     def save(self, *args, **kwargs):
+        """
+        Override save to ensure buckets are set and the 
+        dailywakeup subscription is created if the hours are set.
+        """
         if self.localnoon_bucket is None:
             self.localnoon_bucket = self._calculate_localnoon_bucket(self.timezone)
 
@@ -206,8 +228,21 @@ class Recipient(models.Model):
             (self.morning_bucket, self.evening_bucket, self.wee_hours_bucket) = \
                 self._calculate_delivery_buckets(self.localnoon_bucket)
 
-        return super(Recipient, self).save(*args, **kwargs)
+        result = super(Recipient, self).save(*args, **kwargs)
 
+        if self.dailywakeup_hour is not None:
+            old_bucket = self.dailywakeup_bucket
+            self.set_dailywakeup_bucket()
+            if self.dailywakeup_bucket != old_bucket:
+                #need to save again as we just changed the bucket.
+                #Also calling the parent's save() and not self.save()
+                #to avoid redoing all the work we just did. (And potential infinite recursion if we ever change the bucket calc logic.)
+                super(Recipient, self).save(*args, **kwargs)
+
+            #create the DailyWakeupSubscription so that the dispatcher will know to send
+            DailyWakeupSubscription.objects.get_or_create(recipient=self, short_name='Wakeup') #there's not actually anything in here, it just exists or doesn't.
+        
+        return result
 
     @staticmethod
     def get_recipients_due_for_processing(bucket):
@@ -376,20 +411,7 @@ admin.site.register(TumblrSubscription)
 
 
 class DailyWakeupSubscription(GenericSubscription):
-    delivery_time = models.IntegerField() #hour, from 0-23, in recipient's timezone
-    delivery_bucket = models.IntegerField() #hour, from 0-23, in UTC
     
-    def save(self, *args, **kwargs):
-        self.recipient.set_dailywakeup_bucket()
-        return super(DailyWakeupSubscription, self).save(*args, **kwargs)
-
-
-    def delete(self, *args, **kwargs):
-        self.recipient.set_dailywakeup_bucket(delete=True)
-
-        return super(DailyWakeupSubscription, self).delete(*args, **kwargs)
-
-
     @property
     def timezone(self):
         return self.recipient.timezone
