@@ -1,6 +1,9 @@
 import re
 from datetime import date
 from datetime import datetime, timedelta
+
+from mock import Mock
+
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core import mail
@@ -473,23 +476,51 @@ class RecipientTest(SubscriptionTestCase):
             self.assertTrue(rendered in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
-    def test_calculate_localnoon_bucket_string_timezone(self):
+
+    def test_dailywakeup_bucket_property_no_dst(self):
+        # Africa/Dar_es_Salaam
+        Recipient = Mock()
+        Recipient.dailywakeup_bucket_property
+
+        # Argentina/Buenos_Aires
+        # America/Phoenix
+        # Asia/Saigon
         self.skipTest('writeme')
 
-    def test_calculate_localnoon_bucket_datetimezone(self):
+    def test_dailywakeup_bucket_property_no_dst_weird(self):
+        recip = Recipient()
+        recip.dailywakeup_hour = 7
+
+        # no DST but non-even minutes
+
+        # Asia/Katmandu		+05:45	+05:45
+        recip.timezone = 'Asia/Katmandu'
+
+        # 	Asia/Calcutta		+05:30	+05:30
+        recip.timezone = ''
         self.skipTest('writeme')
 
-    def test_calculate_localnoon_bucket_noargs(self):
+    def test_dailywakeup_bucket_property_dst(self):
+        # America/Mexico_City
+        # America/Chicago
+        # Europe/Copenhagen
+        # Australia/Hobart
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst_weird(self):
+        # DST with non-even minutes
+        # America/St_Johns
+        # Pacific/Chatham
         self.skipTest('writeme')
 
     def test_calculate_localnoon_halfhour_timezone(self):
         # use America/St_Johns, bucket should be incremented by 1.
         self.skipTest('writeme')
 
-    def testcalculate_delivery_buckets(self):
+    def test_calculate_delivery_buckets(self):
         self.skipTest('writeme')
 
-    def testcalculate_delivery_buckets_no_args(self):
+    def test_calculate_delivery_buckets_no_args(self):
         self.skipTest('writeme')
         
     def test_set_dailywakeup_bucket(self):
