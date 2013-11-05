@@ -1,2 +1,3 @@
 django-debug-toolbar
 django-extensions
+mock>=1.0.0

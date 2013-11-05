@@ -73,11 +73,12 @@ class Recipient(models.Model):
                                         help_text=_("The time, in the recipient's timezone, to send a wakeup job."),
                                         choices=DAILYWAKEUP_HOUR_CHOICES,
                                         default=None, blank=True
-                                        )       # for human use; requested local delivery hour
+                                        )       # for human use; *requested* local delivery hour
     dailywakeup_bucket = models.IntegerField(null=True,
                                              help_text="""Which bucket this user's dailywakeup should run for. 
                                                          NULL means no daily wakeup.  This should be 90 minutes 
-                                                         before the actual daily_wakeup_hour."""
+                                                         before the bucket that would be naively specified by the
+                                                         actual daily_wakeup_hour, to allow for processing delays   ."""
                                              )
     morning_bucket = models.IntegerField(null=True,
                                          help_text="When to run the first content pull/push for the day.")
@@ -120,8 +121,25 @@ class Recipient(models.Model):
         return Recipient.objects.filter(vacations__start_date__lt=now,
                                         vacations__end_date__gt=now).distinct()
 
+
     @property
-    def localnoon_bucket(self, timezone_name='America/Chicago'):
+    def localnoon_dt(self):
+        """
+        Given a timezone, figure out local noon.  Convert that to UTC,
+
+        This is a property because doing it thusly is DST-resistant.
+
+        Returns:
+            datetime object representing local noon in UTC
+        """
+        now_dt = time(datetime.now(tz=self.timezone))
+        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
+        utc_noon_dt = local_noon_dt.set_tz('UTC')
+        return utc_noon_dt
+
+
+    @property
+    def localnoon_bucket(self):
         """
         Given a timezone, figure out local noon.  Convert that to UTC, then
         "bucketize" it, e.g. make it an integer from 0 to 47 where:
@@ -132,30 +150,30 @@ class Recipient(models.Model):
         ..
         47 = 23:30 - 23:59:59 UTC delivery time
 
-        Args:
-            timezone: string or datetime.timezone maybe?
+        This is a property because doing it thusly is DST-resistant.
 
         Returns:
             int between 0 and 47.  See description.
         """
-        timezone = pytz.timezone(timezone_name)
-        
-        now = time(datetime.now(tz=timezone))
-        local_noon = time(now.year, now.month, now.day, 12, 0, 0, 0, now.tz)
-        utc_noon = local_noon.set_tz('UTC')
-        localnoon_bucket = utc_noon.hour * 2
-        if utc_noon.minute:
+        localnoon_bucket = self.localnoon_dt.hour * 2    # buckets are half-hourly...
+
+        # ...except when not. Handle time zones +15, +30 etc
+        if self.localnoon_dt.minute:
             localnoon_bucket += 1
+
         return localnoon_bucket
 
 
-    def _calculate_dailywakeup_bucket(self, dailywakeup_hour=None):
+    @property
+    def dailywakeup_bucket_property(self):
         """
         Calculates the daily wakeup bucket for this recipient based on the
         Daily Wakeup delivery time specified by the User, and the Recipient's
         time zone.  NOTE that the bucket will be 90 minutes (3 buckets) PRIOR to
         the requested delivery time, because Presto delivery times are approximate
         and their email handling system can be slow.
+
+        This is a property, but it must be stored in the database for cron jobs.
 
         Args:
             dailywakeup_hour. int. An hour of the day, 0-23.
@@ -165,11 +183,18 @@ class Recipient(models.Model):
                 Wakeup content should be aggregated from queue (if any) and dispatched.
                 90 minutes before the user's selected delivery time.
         """
-        now = time(datetime.now(tz=self.timezone))
-        dailywakeup_hour = time(now.year, now.month, now.day, dailywakeup_hour, 0, 0, 0, now.tz)
+        now_dt = time(datetime.now(tz=self.timezone))
+        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, now_dt.tz)
+        utc_dailywakeup_dt = local_dailywakeup_dt.set_tz('UTC')
+
         dailywakeup_dispatch_delta = delta(m=-90)
-        dailywakeup_dispatch_hour = dailywakeup_hour + dailywakeup_dispatch_delta
-        return dailywakeup_dispatch_hour.hour * 2
+        dailywakeup_dispatch_dt = utc_dailywakeup_dt + dailywakeup_dispatch_delta
+
+        dailywakeup_dispatch_bucket = dailywakeup_dispatch_dt.hour * 2
+        if (dailywakeup_dispatch_dt.minute is not 0 and dailywakeup_dispatch_dt.minute <= 30):
+            dailywakeup_dispatch_bucket += 1
+
+        return dailywakeup_dispatch_bucket
 
 
     def set_dailywakeup_bucket(self, delete=False, save=False):
@@ -181,14 +206,13 @@ class Recipient(models.Model):
         if delete:
             self.dailywakeup_bucket = None
         else:
-            self.dailywakeup_bucket = self._calculate_dailywakeup_bucket(self.dailywakeup_hour)
+            self.dailywakeup_bucket = self.dailywakeup_bucket_property
             
         if save:
             self.save()
 
 
-    @staticmethod
-    def _calculate_delivery_buckets(localnoon_bucket=36):
+    def calculate_delivery_buckets(self):
         """
         Sets the three basic-user call times:  takes localnoon_bucket
         and returns a morning_bucket (11am), evening_bucket (5pm) and
@@ -209,9 +233,9 @@ class Recipient(models.Model):
         eve = random.randint(-6,6)
         weears = random.randint(-6,6)
 
-        morning_bucket = (localnoon_bucket - 2 + morn) % 48
-        evening_bucket = (localnoon_bucket + 10 + eve) % 48
-        wee_hours_bucket = (localnoon_bucket + 28 + weears) % 48
+        morning_bucket = (self.localnoon_bucket - 2 + morn) % 48
+        evening_bucket = (self.localnoon_bucket + 10 + eve) % 48
+        wee_hours_bucket = (self.localnoon_bucket + 28 + weears) % 48
 
         return (morning_bucket, evening_bucket, wee_hours_bucket)
 
@@ -221,12 +245,9 @@ class Recipient(models.Model):
         Override save to ensure buckets are set and the 
         dailywakeup subscription is created if the hours are set.
         """
-        if self.localnoon_bucket is None:
-            self.localnoon_bucket = self._calculate_localnoon_bucket(self.timezone)
-
         if None in (self.morning_bucket, self.evening_bucket, self.wee_hours_bucket):
             (self.morning_bucket, self.evening_bucket, self.wee_hours_bucket) = \
-                self._calculate_delivery_buckets(self.localnoon_bucket)
+                self.calculate_delivery_buckets()
 
         result = super(Recipient, self).save(*args, **kwargs)
 

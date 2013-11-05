@@ -396,7 +396,7 @@ class RecipientTest(SubscriptionTestCase):
         self.assertTrue(dailywakeup_bucket is not None)
         
         self.assertTrue(obj in Recipient.get_recipients_due_for_processing(bucket=dailywakeup_bucket))
-        
+
 
     def test_delete(self):
         """
@@ -486,10 +486,10 @@ class RecipientTest(SubscriptionTestCase):
         # use America/St_Johns, bucket should be incremented by 1.
         self.skipTest('writeme')
 
-    def test_calculate_delivery_buckets(self):
+    def testcalculate_delivery_buckets(self):
         self.skipTest('writeme')
 
-    def test_calculate_delivery_buckets_no_args(self):
+    def testcalculate_delivery_buckets_no_args(self):
         self.skipTest('writeme')
         
     def test_set_dailywakeup_bucket(self):
