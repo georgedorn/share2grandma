@@ -2,6 +2,7 @@ import base64
 import uuid
 import random
 from datetime import datetime
+from django.core.exceptions import FieldError
 
 from django.db import models
 from django.contrib import admin
@@ -123,19 +124,38 @@ class Recipient(models.Model):
 
 
     @property
-    def localnoon_dt(self):
+    def localnoon_hour(self):
         """
-        Given a timezone, figure out local noon.  Convert that to UTC,
+        Given a timezone, figure out local noon.  Convert that to UTC
+        and return the hour.
 
         This is a property because doing it thusly is DST-resistant.
 
         Returns:
-            datetime object representing local noon in UTC
+            int representing hour of local noon in UTC
         """
         now_dt = time(datetime.now(tz=self.timezone))
         local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
         utc_noon_dt = local_noon_dt.set_tz('UTC')
-        return utc_noon_dt
+        return utc_noon_dt.hour
+
+
+    @property
+    def localnoon_minute(self):
+        """
+        Given a timezone, figure out local noon.  Convert that to UTC
+        and return the *minute* in UTC.  This is useful for weird
+        time zones offset by 15, 30, 45 min etc.
+
+        This is a property because doing it thusly is DST-resistant.
+
+        Returns:
+            int representing *minute* of local noon in UTC
+        """
+        now_dt = time(datetime.now(tz=self.timezone))
+        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
+        utc_noon_dt = local_noon_dt.set_tz('UTC')
+        return utc_noon_dt.minute
 
 
     @property
@@ -155,17 +175,17 @@ class Recipient(models.Model):
         Returns:
             int between 0 and 47.  See description.
         """
-        localnoon_bucket = self.localnoon_dt.hour * 2    # buckets are half-hourly...
+        localnoon_bucket = self.localnoon_hour * 2    # buckets are half-hourly...
 
         # ...except when not. Handle time zones +15, +30 etc
-        if self.localnoon_dt.minute:
+        if self.localnoon_minute:
             localnoon_bucket += 1
 
         return localnoon_bucket
 
 
     @property
-    def dailywakeup_bucket_property(self):
+    def dailywakeup_bucket_property(self):  # so named due to conflict with model field
         """
         Calculates the daily wakeup bucket for this recipient based on the
         Daily Wakeup delivery time specified by the User, and the Recipient's
@@ -183,6 +203,9 @@ class Recipient(models.Model):
                 Wakeup content should be aggregated from queue (if any) and dispatched.
                 90 minutes before the user's selected delivery time.
         """
+        if(self.timezone is None or self.timezone == ''):
+            raise FieldError
+
         now_dt = time(datetime.now(tz=self.timezone))
         local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, now_dt.tz)
         utc_dailywakeup_dt = local_dailywakeup_dt.set_tz('UTC')

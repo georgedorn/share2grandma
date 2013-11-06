@@ -1,6 +1,7 @@
+from random import randrange
 import re
-from datetime import date
-from datetime import datetime, timedelta
+from datetime import time, datetime, timedelta
+from django.core.exceptions import FieldError
 
 from mock import Mock
 
@@ -477,45 +478,156 @@ class RecipientTest(SubscriptionTestCase):
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
 
-    def test_dailywakeup_bucket_property_no_dst(self):
+    def test_dailywakeup_bucket_property_no_recip_dailywakeup_hour(self):
+        recip = Recipient()
+        # should have default time zone
+
+        caught = False
+        try:
+            t = recip.dailywakeup_bucket_property
+        except Exception, ex:
+            caught = True
+
+        self.assertTrue(caught)
+
+
+    def test_dailywakeup_bucket_property_no_recip_timezone(self):
+        recip = Recipient()
+        recip.dailywakeup_hour = randrange(0, 24)
+        recip.timezone = ''
+
+        caught_empty = False
+        try:
+            t = recip.dailywakeup_bucket_property
+        except FieldError:
+            caught_empty = True
+
+        self.assertTrue(caught_empty)
+
+        # now try a null
+        recip = Recipient()
+        recip.dailywakeup_hour = randrange(0, 24)
+        recip.timezone = None
+        caught_null = False
+        try:
+            t = recip.dailywakeup_bucket_property
+        except FieldError:
+            caught_null = True
+
+        self.assertTrue(caught_null)
+
+
+    def test_localnoon_hour_no_dst(self):
         # Africa/Dar_es_Salaam
-        Recipient = Mock()
-        Recipient.dailywakeup_bucket_property
+        recip = Recipient()
+        recip.timezone = 'Africa/Dar_es_Salaam'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 9
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
         # Argentina/Buenos_Aires
-        # America/Phoenix
-        # Asia/Saigon
-        self.skipTest('writeme')
-
-    def test_dailywakeup_bucket_property_no_dst_weird(self):
         recip = Recipient()
-        recip.dailywakeup_hour = 7
+        recip.timezone = 'America/Buenos_Aires'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 15
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
-        # no DST but non-even minutes
+        # America/Phoenix
+        recip = Recipient()
+        recip.timezone = 'America/Phoenix'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 19
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+
+        # Asia/Saigon
+        recip = Recipient()
+        recip.timezone = 'Asia/Saigon'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 5
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+
+
+    def test_localnoon_hour_no_dst_weird(self):
+        """
+        no DST but non-even minutes
+        """
 
         # Asia/Katmandu		+05:45	+05:45
+        recip = Recipient()
         recip.timezone = 'Asia/Katmandu'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 6  # because the datetime math will count the minutes, so it's not 7
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
-        # 	Asia/Calcutta		+05:30	+05:30
-        recip.timezone = ''
-        self.skipTest('writeme')
+        # Asia/Calcutta		+05:30	+05:30
+        recip = Recipient()
+        recip.timezone = 'Asia/Calcutta'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 6  # because the datetime math will count the minutes, so it's not 7
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
-    def test_dailywakeup_bucket_property_dst(self):
+        # Pacific/Marquesas
+        recip = Recipient()
+        recip.timezone = 'America/Caracas'
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 16
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+
+
+    def test_localnoon_hour_dst(self):
         # America/Mexico_City
         # America/Chicago
         # Europe/Copenhagen
         # Australia/Hobart
         self.skipTest('writeme')
 
-    def test_dailywakeup_bucket_property_dst_weird(self):
+    def test_localnoon_hour_dst_weird(self):
         # DST with non-even minutes
         # America/St_Johns
         # Pacific/Chatham
         self.skipTest('writeme')
 
-    def test_calculate_localnoon_halfhour_timezone(self):
-        # use America/St_Johns, bucket should be incremented by 1.
+
+    def test_localnoon_minute_no_dst(self):
         self.skipTest('writeme')
+
+    def test_localnoon_minute_no_dst_weird(self):
+        self.skipTest('writeme')
+
+    def test_localnoon_minute_dst(self):
+        self.skipTest('writeme')
+
+    def test_localnoon_minute_dst_weird(self):
+        self.skipTest('writeme')
+
+
+    def test_dailywakeup_bucket_property_no_dst(self):
+        self.skipTest('writeme')
+
+
+    def test_dailywakeup_bucket_property_no_dst_weird(self):
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst(self):
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst_weird(self):
+        self.skipTest('writeme')
+
 
     def test_calculate_delivery_buckets(self):
         self.skipTest('writeme')

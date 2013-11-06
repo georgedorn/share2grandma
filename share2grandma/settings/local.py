@@ -16,7 +16,8 @@ EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-DB_USER = getenv('USER')
+DB_USER = getenv('USER', '')
+DB_HOST = getenv('DB_HOST', '')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
@@ -24,7 +25,7 @@ DATABASES = {
         # The following settings are not used with sqlite3:
         'USER': DB_USER,
         'PASSWORD': '',
-        'HOST': '',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'HOST': DB_HOST,           # Usually empty - see http://v.gd/TthOJe - for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
         'PORT': '',                      # Set to empty string for default.
     }
 }
