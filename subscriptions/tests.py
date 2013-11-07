@@ -1,6 +1,6 @@
 from random import randrange
 import re
-from datetime import time, datetime, timedelta
+from datetime import time, datetime, timedelta, date
 from django.core.exceptions import FieldError
 
 from mock import Mock
@@ -588,12 +588,42 @@ class RecipientTest(SubscriptionTestCase):
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
 
-    def test_localnoon_hour_dst(self):
-        # America/Mexico_City
+    def test_localnoon_hour_dst_june(self):
+        # America/Resolute
+        recip = Recipient()
+        tz_name = "America/Resolute"
+        tz = pytz.timezone(tz_name)
+        recip.timezone = tz_name
+
+        #June
+        specified_local_noon_dt = datetime.combine(date(2013, 6, 15), time(12, 0, 0, 0, tzinfo=tz))
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 4
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
         # America/Chicago
         # Europe/Copenhagen
         # Australia/Hobart
-        self.skipTest('writeme')
+
+    def test_localnoon_hour_dst_december(self):
+        # America/Resolute
+        recip = Recipient()
+        tz_name = "America/Resolute"
+        tz = pytz.timezone(tz_name)
+        recip.timezone = tz_name
+
+        # December
+        specified_local_noon_dt = datetime.combine(date(2013, 12, 15), time(12, 0, 0, 0, tzinfo=tz))
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        expect = 4
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
 
     def test_localnoon_hour_dst_weird(self):
         # DST with non-even minutes

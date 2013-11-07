@@ -122,7 +122,6 @@ class Recipient(models.Model):
         return Recipient.objects.filter(vacations__start_date__lt=now,
                                         vacations__end_date__gt=now).distinct()
 
-
     @property
     def localnoon_hour(self):
         """
@@ -134,8 +133,7 @@ class Recipient(models.Model):
         Returns:
             int representing hour of local noon in UTC
         """
-        now_dt = time(datetime.now(tz=self.timezone))
-        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
+        local_noon_dt = self.__get_local_noon_dt()
         utc_noon_dt = local_noon_dt.set_tz('UTC')
         return utc_noon_dt.hour
 
@@ -152,8 +150,7 @@ class Recipient(models.Model):
         Returns:
             int representing *minute* of local noon in UTC
         """
-        now_dt = time(datetime.now(tz=self.timezone))
-        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
+        local_noon_dt = self.__get_local_noon_dt()
         utc_noon_dt = local_noon_dt.set_tz('UTC')
         return utc_noon_dt.minute
 
@@ -206,8 +203,7 @@ class Recipient(models.Model):
         if(self.timezone is None or self.timezone == ''):
             raise FieldError
 
-        now_dt = time(datetime.now(tz=self.timezone))
-        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, now_dt.tz)
+        local_dailywakeup_dt = self.__get_local_dailywakeup_dt()
         utc_dailywakeup_dt = local_dailywakeup_dt.set_tz('UTC')
 
         dailywakeup_dispatch_delta = delta(m=-90)
@@ -343,6 +339,29 @@ class Recipient(models.Model):
                                        [destination])
         email.attach_alternative(content, mimetype='text/html')
         email.send()
+
+
+    def __get_local_noon_dt(self):
+        """
+        Extracted for DRY easy mocking
+
+        @return datetime local noon in local timezone
+        """
+        now_dt = time(datetime.now(tz=self.timezone))
+        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
+        return local_noon_dt
+
+
+    def __get_local_dailywakeup_dt(self):
+        """
+        Extracted for easy mocking
+
+        @return datetime today's dailywakeup hour in local timezone
+        """
+        now_dt = time(datetime.now(tz=self.timezone))
+        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, now_dt.tz)
+        return local_dailywakeup_dt
+
 
 #class SubscriptionBundle(object):
 #    
