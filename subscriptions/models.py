@@ -1,7 +1,5 @@
-import base64
 import uuid
 import random
-from datetime import datetime
 from django.core.exceptions import FieldError
 
 from django.db import models
@@ -12,21 +10,19 @@ from django.utils import translation
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models.query_utils import Q
 from django.template.loader import render_to_string
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
-
-import pytz
-from sanetime import time, delta
-#from sanetime.dj import SaneTimeField
-from timezone_field import TimeZoneField
-
-from pytumblr import TumblrRestClient
 from django.utils.html import strip_tags
 from django.core.mail.message import EmailMultiAlternatives
+
+from sanetime import time, delta
+
+from pytumblr import TumblrRestClient
+from timezone_field import TimeZoneField
+
 
 
 class GenericSubscription(models.Model):
@@ -347,7 +343,7 @@ class Recipient(models.Model):
 
         @return datetime local noon in local timezone
         """
-        now_dt = time(datetime.now(tz=self.timezone))
+        now_dt = time(tz=self.timezone)
         local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
         return local_noon_dt
 
@@ -358,7 +354,7 @@ class Recipient(models.Model):
 
         @return datetime today's dailywakeup hour in local timezone
         """
-        now_dt = time(datetime.now(tz=self.timezone))
+        now_dt = time(tz=self.timezone)
         local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, now_dt.tz)
         return local_dailywakeup_dt
 
@@ -492,8 +488,7 @@ class DailyWakeupSubscription(GenericSubscription):
         
         @todo: read DailyWakeupContent objects for actual content.
         """
-        timezone = self.recipient.timezone
-        current_time = timezone.localize(datetime.now())
+        current_time = timezone.localize(time(tz=self.recipient.timezone))
         translation.activate(self.recipient.language)
         result = render_to_string('subscriptions/email/daily_wakeup.html', {'now':current_time})
         return result
@@ -525,10 +520,6 @@ class Vacation(models.Model):
         Last-ditch effort to ensure that start/end dates have the right timezones,
         namely that of their recipients.
         """
-        if timezone.is_naive(self.start_date):
-            self.start_date = timezone.make_aware(self.start_date, self.recipient.timezone)
-        if timezone.is_naive(self.end_date):
-            self.end_date = timezone.make_aware(self.end_date, self.recipient.timezone)
         return super(Vacation, self).save(*args, **kwargs)
 
 

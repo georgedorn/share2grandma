@@ -1,7 +1,5 @@
 from random import randrange
 import re
-from datetime import time, datetime, timedelta, date
-from django.core.exceptions import FieldError
 
 from mock import Mock
 
@@ -9,17 +7,20 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.core import mail
 from django.test import TestCase
-from django.utils import timezone as dutz
+from django.core.exceptions import FieldError
 
 from .models import TumblrSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
-import pytz
-import locale
+
+import sanetime
+from sanetime import time, delta
 
 from subscriptions.forms import VacationForm
 from django.template.context import Context
 from django.template.base import Template
 from subscriptions.models import GenericSubscription
+
+
 
 class GenericSubscriptionTest(TestCase):
     """
@@ -517,11 +518,16 @@ class RecipientTest(SubscriptionTestCase):
         self.assertTrue(caught_null)
 
 
+    #####################################
+
+
     def test_localnoon_hour_no_dst(self):
         # Africa/Dar_es_Salaam
         recip = Recipient()
-        recip.timezone = 'Africa/Dar_es_Salaam'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        tz_name = 'Africa/Dar_es_Salaam'
+        recip.timezone = tz_name
+        localnoon = sanetime.sanetztime(tz=tz_name)
+        tz_interp = localnoon.tz
         expect = 9
         result = recip.localnoon_hour
         self.assertEqual(result, expect,
@@ -529,28 +535,28 @@ class RecipientTest(SubscriptionTestCase):
 
         # Argentina/Buenos_Aires
         recip = Recipient()
-        recip.timezone = 'America/Buenos_Aires'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 15
-        result = recip.localnoon_hour
+        tz_name = 'America/Buenos_Aires'
+        recip.timezone = tz_name
+        localnoon = sanetime.sanetztime(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        tz_interp = localnoon.tz
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
         # America/Phoenix
         recip = Recipient()
-        recip.timezone = 'America/Phoenix'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 19
-        result = recip.localnoon_hour
+        tz_name = 'America/Phoenix'
+        recip.timezone = tz_name
+        localnoon = sanetime.sanetztime(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        tz_interp = localnoon.tz
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
         # Asia/Saigon
         recip = Recipient()
-        recip.timezone = 'Asia/Saigon'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 5
-        result = recip.localnoon_hour
+        tz_name = 'Asia/Saigon'
+        recip.timezone = tz_name
+        localnoon = sanetime.sanetztime(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        tz_interp = localnoon.tz
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
@@ -562,26 +568,29 @@ class RecipientTest(SubscriptionTestCase):
 
         # Asia/Katmandu		+05:45	+05:45
         recip = Recipient()
-        recip.timezone = 'Asia/Katmandu'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 6  # because the datetime math will count the minutes, so it's not 7
+        tz_name = 'Asia/Katmandu'
+        recip.timezone = tz_name
+        tz_interp = time(tz=tz_name).tz_name
+        expect = 6  # because the time math will count the minutes, so it's not 7
         result = recip.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
         # Asia/Calcutta		+05:30	+05:30
         recip = Recipient()
-        recip.timezone = 'Asia/Calcutta'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 6  # because the datetime math will count the minutes, so it's not 7
+        tz_name = 'Asia/Calcutta'
+        recip.timezone = tz_name
+        tz_interp = time(tz=tz_name).tz_name
+        expect = 6  # because the time math will count the minutes, so it's not 7
         result = recip.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
 
         # Pacific/Marquesas
         recip = Recipient()
-        recip.timezone = 'America/Caracas'
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
+        tz_name = 'America/Caracas'
+        recip.timezone = tz_name
+        tz_interp = time(tz=tz_name).tz_name
         expect = 16
         result = recip.localnoon_hour
         self.assertEqual(result, expect,
@@ -592,34 +601,107 @@ class RecipientTest(SubscriptionTestCase):
         # America/Resolute
         recip = Recipient()
         tz_name = "America/Resolute"
-        tz = pytz.timezone(tz_name)
         recip.timezone = tz_name
 
-        #June
-        specified_local_noon_dt = datetime.combine(date(2013, 6, 15), time(12, 0, 0, 0, tzinfo=tz))
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
         recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 4
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 17
         result = recip.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
 
         # America/Chicago
+        recip = Recipient()
+        tz_name = "America/Chicago"
+        recip.timezone = tz_name
+
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 17
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
         # Europe/Copenhagen
+        recip = Recipient()
+        tz_name = "Europe/Copenhagen"
+        recip.timezone = tz_name
+
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 10
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
         # Australia/Hobart
+        recip = Recipient()
+        tz_name = "Australia/Hobart"
+        recip.timezone = tz_name
+
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 1
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
+
 
     def test_localnoon_hour_dst_december(self):
         # America/Resolute
         recip = Recipient()
         tz_name = "America/Resolute"
-        tz = pytz.timezone(tz_name)
         recip.timezone = tz_name
 
-        # December
-        specified_local_noon_dt = datetime.combine(date(2013, 12, 15), time(12, 0, 0, 0, tzinfo=tz))
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
         recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = datetime.now(tz=recip.timezone).tzname()
-        expect = 4
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 16
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
+        # America/Chicago
+        recip = Recipient()
+        tz_name = "America/Chicago"
+        recip.timezone = tz_name
+
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 16
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
+        # Europe/Copenhagen
+        recip = Recipient()
+        tz_name = "Europe/Copenhagen"
+        recip.timezone = tz_name
+
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 11
+        result = recip.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+
+        # Australia/Hobart
+        recip = Recipient()
+        tz_name = "Australia/Hobart"
+        recip.timezone = tz_name
+
+        #June
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
+        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=recip.timezone).tz_name
+        expect = 2
         result = recip.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
@@ -761,12 +843,12 @@ class VacationTests(SubscriptionTestCase):
         self.assertFalse(self.recipient.is_on_vacation())
 
     def test_is_on_vacation_obvious(self):
-        now = dutz.now()
-        last_week = now - timedelta(days=7)
-        next_week = now + timedelta(days=7)
+        now = time()
+        last_week = now - delta(hours=7*24)
+        next_week = now + delta(hours=7*24)
         Vacation.objects.create(recipient=self.recipient,
-                                start_date=last_week,
-                                end_date=next_week)
+                                start_date=last_week.datetime,
+                                end_date=next_week.datetime)
         
         self.assertTrue(self.recipient.is_on_vacation())
 
@@ -774,22 +856,16 @@ class VacationTests(SubscriptionTestCase):
         """
         A test of an edge case where a recipient's vacation is in a different time zone than the server.
         """
-        timezone = pytz.timezone('Europe/Amsterdam')
+        timezone = 'Europe/Amsterdam'
         self.recipient.timezone = timezone
         self.recipient.save()
-        now = datetime.now()
-        
-        #the trick here is that pytz.timezone.localize takes a naive datetime
-        #and appends a timezone without altering the datetime.
-        #e.g. if it is 8pm now in America/Los_Angeles,
-        #this results in a start of 6pm in Europe/Amsterdam
-        start = timezone.localize(now - timedelta(hours=2))
-        #and this would result in end of 10pm in Europe/Amsterdam
-        end = timezone.localize(now + timedelta(hours=2))
-        
+
+        start = time(tz=timezone) - delta(hours=2)
+        end = time(tz=timezone) + delta(hours=2)
+
         Vacation.objects.create(recipient=self.recipient,
-                                start_date=start,
-                                end_date=end)
+                                start_date=start.datetime,
+                                end_date=end.datetime)
         #Amsterdam is 8-9 hours ahead depending on DST, so this 4-hour vacation
         #was actually over about 4 hours ago
         self.assertFalse(self.recipient.is_on_vacation())
@@ -799,18 +875,17 @@ class VacationTests(SubscriptionTestCase):
         Like previous test, create a vacation in another timezone, but
         make it overlap the current time in the server's timezone.
         """
-        timezone = pytz.timezone('Europe/Amsterdam') # 8-9 hours ahead
+        timezone = 'Europe/Amsterdam' # 8-9 hours ahead
         self.recipient.timezone = timezone
         self.recipient.save()
         
-        now = datetime.now()
-        
-        start = timezone.localize(now + timedelta(hours=6)) #less than 8-9 hours from now
-        end = timezone.localize(now + timedelta(hours=12))
+        now = time(tz=timezone)
+        start = now + delta(hours=6) #less than 8-9 hours from now
+        end = now - delta(hours=12)
         
         Vacation.objects.create(recipient=self.recipient,
-                                start_date=start,
-                                end_date=end
+                                start_date=start.datetime,
+                                end_date=end.datetime
                                 )
         self.assertTrue(self.recipient.is_on_vacation())
                                 
@@ -820,9 +895,9 @@ class VacationTests(SubscriptionTestCase):
         """
         #start with a clean slate
         Recipient.objects.all().delete()
-        now = dutz.now()
-        last_week = now - timedelta(days=7)
-        next_week = now + timedelta(days=7)
+        now = time(tz='UTC')
+        last_week = now - delta(hours=7*24)
+        next_week = now + delta(hours=7*24)
         
         for i in range(10):
             recipient = Recipient.objects.create(sender=self.user,
@@ -832,8 +907,8 @@ class VacationTests(SubscriptionTestCase):
                     
             if i < 4: #create vacations for the first four
                 Vacation.objects.create(recipient=recipient,
-                                        start_date=last_week,
-                                        end_date=next_week)
+                                        start_date=last_week.datetime,
+                                        end_date=next_week.datetime)
         
         self.assertEqual(Recipient.get_vacationing_recipients().count(), 4)
         self.assertEqual(Recipient.objects.exclude(pk__in=Recipient.get_vacationing_recipients()).count(), 6)
@@ -844,44 +919,49 @@ class VacationTests(SubscriptionTestCase):
         Ensure that creating a vacation without timezone info results
         in using the recipient's timezone.
         """
-        timezone = pytz.timezone('America/New_York')
+        timezone = 'America/New_York'
         self.recipient.timezone = timezone
         self.recipient.save()
-        
-        start = datetime(year=2012, month=12, day=12, hour=12)
-        end = datetime(year=2012, month=12, day=14, hour=12)
-        
+
+        start = time(2012, 12, 12, 12, 0, 0, tz=timezone)
+        end = time(2012, 12, 14, 12, 0, 0, tz=timezone)
+
         vacation = Vacation.objects.create(recipient=self.recipient,
-                                           start_date=start,
-                                           end_date=end)
-        
-        self.assertEqual(vacation.start_date.tzinfo, timezone)
-        self.assertEqual(vacation.end_date.tzinfo, timezone)
-        
+                                           start_date=start.datetime,
+                                           end_date=end.datetime)
+
+        vaca_tz_name = str(vacation.start_date.tzinfo.tzname)
+        self.assertTrue(timezone in vaca_tz_name,
+                        "vacation.start_date: %s was interpreted as %s" % (timezone, vaca_tz_name))
+
+        vaca_tz_name = str(vacation.end_date.tzinfo.tzname)
+        self.assertTrue(timezone in vaca_tz_name,
+                        "vacation.end_date: %s was interpreted as %s" % (timezone, vaca_tz_name))
+
     def test_bad_vacation_form(self):
         """
         Submitting a vacation form where the start date is after the end date is an error.
         """
-        start = dutz.now().today()
-        end = start - timedelta(days=1)
+        start = time(tz='UTC')
+        end = start - delta(hours=1*24)
         data = {'start_date': start.strftime('%Y-%m-%d'),
                 'end_date': end.strftime('%Y-%m-%d')}
         form = VacationForm(data)
         self.assertFalse(form.is_valid())
-        
+
     def test_delete_future_vacation(self):
         """
         Cancelling a future vacation that has not yet started is fine,
         just delete it.
         """
         self.client.login(**self.userdata)
-        start = dutz.now() + timedelta(days=1)
-        end = start + timedelta(weeks=1)
+        start = time(tz='UTC') + delta(hours=1*24)
+        end = start + delta(hours=1*24*7)
+
         vacation = Vacation.objects.create(recipient=self.recipient,
-                                           start_date=start,
-                                           end_date=end
-                                           )
-        
+                                           start_date=start.datetime,
+                                           end_date=end.datetime)
+
         url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
         self.client.post(url)
         
@@ -893,17 +973,16 @@ class VacationTests(SubscriptionTestCase):
         the end date to now, not actually deleting it.
         """
         self.client.login(**self.userdata)
-        start = dutz.now() - timedelta(days=2) #started yesterday
-        end = start + timedelta(days=7)
+        start = time(tz='UTC') - delta(hours=2*24) #started yesterday
+        end = start + delta(hours=7*24)
         vacation = Vacation.objects.create(recipient=self.recipient,
-                                           start_date=start,
-                                           end_date=end
-                                           )
+                                           start_date=start.datetime,
+                                           end_date=end.datetime)
         
         url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
         self.client.post(url)
         vacation = Vacation.objects.get(pk=vacation.pk) #reload
-        self.assertTrue(vacation.end_date <= dutz.now())
+        self.assertTrue(vacation.end_date <= time(tz='UTC').datetime)
 
     def test_delete_somebody_elses_vacation(self):
         """
@@ -916,9 +995,11 @@ class VacationTests(SubscriptionTestCase):
 
         #this vacation starts and ends in the future, so it can be deleted and not just trigger
         #the end_date change.
+        start_date = time(tz='UTC') + delta(hours=1 * 24)
+        end_date = time(tz='UTC') + delta(hours=4 * 24 * 7)
         vacation = Vacation.objects.create(recipient=new_recipient,
-                                           start_date=dutz.now() + timedelta(days=1),
-                                           end_date=dutz.now() + timedelta(weeks=4))
+                                           start_date=start_date.datetime,
+                                           end_date=end_date.datetime)
         url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
         
         self.client.login(**self.userdata) #login as self.user, NOT new_user
@@ -936,8 +1017,8 @@ class VacationTests(SubscriptionTestCase):
         self.client.login(**self.userdata)
         url = reverse('vacation_create', kwargs={'recipient_id': new_recipient.pk})
         
-        start = dutz.now().today()
-        end = start - timedelta(days=1)
+        start = time(tz='UTC')
+        end = start - delta(hours=1*24)
         data = {'start_date': start.strftime('%Y-%m-%d'),
                 'end_date': end.strftime('%Y-%m-%d')}
         
