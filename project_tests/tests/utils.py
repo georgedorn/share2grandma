@@ -1,8 +1,8 @@
 from django.test import TestCase
 from share2grandma.utils import get_current_bucket, get_current_time_utc, get_bucket
 from mock import patch
-import sanetime
-from datetime import datetime
+from sanetime import time
+
 
 def make_now_function(**kwargs):
     """
@@ -19,10 +19,13 @@ def make_now_function(**kwargs):
                 }
 
     defaults.update(kwargs)
+    my = defaults
+
+    args = [my['year'], my['month'], my['day'], my['hour'], my['minute'], my['second']]
 
     def my_func():
-        dt = datetime(**defaults)
-        return sanetime.SaneTime(dt)
+        dt = time(*args, tz='UTC')
+        return dt
 
     return my_func
 
@@ -36,10 +39,10 @@ class UtilsTests(TestCase):
         a patchable wrapper for datetime.utcnow().
         """
         now = get_current_time_utc()
-        real_now = datetime.utcnow()
+        real_now = time(tz='UTC')
         
-        diff = real_now - now
-        self.assertLessEqual(diff.total_seconds(), 2)
+        delt = real_now - now
+        self.assertLessEqual(delt.whole_seconds, 2)
         
 
 class GetBucketTests(TestCase):
