@@ -23,7 +23,8 @@ class ViewsTests(TestCase):
                                                   sender_name='bob',
                                                   sender_phone='000-000-0000',
                                                   name='granny',
-                                                  email='bob@yruncle.com'
+                                                  email='bob@yruncle.com',
+                                                  timezone='America/Los_Angeles'
                                                 )
         self.subscription = TumblrSubscription.objects.create(recipient=self.recipient,
                                                               short_name='bobs_monkeys',

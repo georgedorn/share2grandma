@@ -62,7 +62,7 @@ class Recipient(models.Model):
     name = models.CharField(null=False, blank=False, max_length=64)
     add_date = models.DateField(auto_now_add=True)
     email = models.EmailField(null=False, blank=False)
-    timezone = TimeZoneField(default='America/Los_Angeles')
+    timezone = TimeZoneField()
     language = models.CharField(default='en-us', max_length=12)
     temperature = models.CharField(default='F', max_length=1)
 
@@ -85,6 +85,10 @@ class Recipient(models.Model):
                                          help_text="When to run the third content pull/push for the day.")
 
     postcode = models.CharField(null=True, blank=True, max_length=16)
+
+    @property
+    def tz_name(self):
+        return self.timezone.zone
 
     def get_absolute_url(self):
         return reverse('recipient_detail', kwargs={'pk':self.pk})
@@ -125,6 +129,12 @@ class Recipient(models.Model):
         and return the hour.
 
         This is a property because doing it thusly is DST-resistant.
+
+        It's basically floor(localnoon_utc_dt) in terms of hours (the int
+        returned) for weird time zones west of Greenwich, and
+        ceil(localnoon_utc_dt) for weird time zones east, where weird
+        time zones are thoses that have a UTC offset in minutes % 60 != 0.
+        ... I think.
 
         Returns:
             int representing hour of local noon in UTC
@@ -196,7 +206,7 @@ class Recipient(models.Model):
                 Wakeup content should be aggregated from queue (if any) and dispatched.
                 90 minutes before the user's selected delivery time.
         """
-        if(self.timezone is None or self.timezone == ''):
+        if(self.timezone is None or self.tz_name == ''):
             raise FieldError
 
         local_dailywakeup_dt = self.__get_local_dailywakeup_dt()
@@ -343,8 +353,9 @@ class Recipient(models.Model):
 
         @return datetime local noon in local timezone
         """
-        now_dt = time(tz=self.timezone)
-        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, now_dt.tz)
+        my_tz_name = self.tz_name
+        now_dt = time(tz=my_tz_name)
+        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, tz=my_tz_name)
         return local_noon_dt
 
 
@@ -354,8 +365,9 @@ class Recipient(models.Model):
 
         @return datetime today's dailywakeup hour in local timezone
         """
-        now_dt = time(tz=self.timezone)
-        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, now_dt.tz)
+        my_tz_name = self.tz_name
+        now_dt = time(tz=my_tz_name)
+        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, tz=my_tz_name)
         return local_dailywakeup_dt
 
 

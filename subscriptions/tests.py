@@ -50,7 +50,8 @@ class TumblrSubscriptionProcessorTest(TestCase):
         self.user = User.objects.create_user('derplord')
         self.recipient = Recipient.objects.create(sender=self.user,
                                                   name='Grrrranny',
-                                                  email='mams@aol.com')
+                                                  email='mams@aol.com',
+                                                  timezone='America/Phoenix')
         self.subscription = TumblrSubscription(recipient=self.recipient,
                                                short_name='demo')
 
@@ -66,7 +67,7 @@ class TumblrSubscriptionProcessorTest(TestCase):
         caught = False
         try:
             my_subscription = TumblrSubscription(recipient=self.recipient,
-                                             short_name='zmxmdmcnnjjncn')
+                                                 short_name='zmxmdmcnnjjncn')
             my_subscription.pull_metadata()
         except KeyError, e:
             caught = True
@@ -122,7 +123,8 @@ class SubscriptionTestCase(TestCase):
         self.recipient = Recipient.objects.create(sender=self.user,
                                                   name='Nonna',
                                                   email='elsa@yahoo.com',
-                                                  postcode='02540')
+                                                  postcode='02540',
+                                                  timezone='America/New_York')
 
 
 class ProfileTestCase(SubscriptionTestCase):
@@ -480,38 +482,36 @@ class RecipientTest(SubscriptionTestCase):
 
 
     def test_dailywakeup_bucket_property_no_recip_dailywakeup_hour(self):
-        recip = Recipient()
-        # should have default time zone
-
         caught = False
         try:
-            t = recip.dailywakeup_bucket_property
+            t = self.recipient.dailywakeup_bucket_property
         except Exception, ex:
             caught = True
 
         self.assertTrue(caught)
 
 
-    def test_dailywakeup_bucket_property_no_recip_timezone(self):
-        recip = Recipient()
-        recip.dailywakeup_hour = randrange(0, 24)
-        recip.timezone = ''
+    def test_dailywakeup_bucket_property_emptystring_recip_timezone(self):
+        # empty string
+        self.recipient.dailywakeup_hour = randrange(0, 24)
+        self.recipient.timezone = ''
 
         caught_empty = False
         try:
-            t = recip.dailywakeup_bucket_property
+            t = self.recipient.dailywakeup_bucket_property
         except FieldError:
             caught_empty = True
 
         self.assertTrue(caught_empty)
 
+    def test_dailywakeup_bucket_property_none_recip_timezone(self):
         # now try a null
-        recip = Recipient()
-        recip.dailywakeup_hour = randrange(0, 24)
-        recip.timezone = None
+        self.recipient.dailywakeup_hour = randrange(0, 24)
+        self.recipient.timezone = None
+
         caught_null = False
         try:
-            t = recip.dailywakeup_bucket_property
+            t = self.recipient.dailywakeup_bucket_property
         except FieldError:
             caught_null = True
 
@@ -523,42 +523,46 @@ class RecipientTest(SubscriptionTestCase):
 
     def test_localnoon_hour_no_dst(self):
         # Africa/Dar_es_Salaam
-        recip = Recipient()
         tz_name = 'Africa/Dar_es_Salaam'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
+
         localnoon = sanetime.sanetztime(tz=tz_name)
         tz_interp = localnoon.tz
         expect = 9
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
         # Argentina/Buenos_Aires
-        recip = Recipient()
+        
         tz_name = 'America/Buenos_Aires'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
         localnoon = sanetime.sanetztime(2013, 12, 15, 12, 0, 0, tz=tz_name)
         tz_interp = localnoon.tz
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
         # America/Phoenix
-        recip = Recipient()
+        
         tz_name = 'America/Phoenix'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
         localnoon = sanetime.sanetztime(2013, 12, 15, 12, 0, 0, tz=tz_name)
         tz_interp = localnoon.tz
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
         # Asia/Saigon
-        recip = Recipient()
+        
         tz_name = 'Asia/Saigon'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
         localnoon = sanetime.sanetztime(2013, 12, 15, 12, 0, 0, tz=tz_name)
         tz_interp = localnoon.tz
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
 
     def test_localnoon_hour_no_dst_weird(self):
@@ -567,151 +571,221 @@ class RecipientTest(SubscriptionTestCase):
         """
 
         # Asia/Katmandu		+05:45	+05:45
-        recip = Recipient()
+        
         tz_name = 'Asia/Katmandu'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
         tz_interp = time(tz=tz_name).tz_name
         expect = 6  # because the time math will count the minutes, so it's not 7
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
         # Asia/Calcutta		+05:30	+05:30
-        recip = Recipient()
+        
         tz_name = 'Asia/Calcutta'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
         tz_interp = time(tz=tz_name).tz_name
         expect = 6  # because the time math will count the minutes, so it's not 7
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
         # Pacific/Marquesas
-        recip = Recipient()
+        
         tz_name = 'America/Caracas'
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
         tz_interp = time(tz=tz_name).tz_name
         expect = 16
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
 
 
     def test_localnoon_hour_dst_june(self):
-        # America/Resolute
-        recip = Recipient()
-        tz_name = "America/Resolute"
-        recip.timezone = tz_name
+        # America/Cancun
+        # also doesn't work with America/Resolute. wtf?
+        
+        tz_name = "America/Cancun"
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 17
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
         # America/Chicago
-        recip = Recipient()
+        
         tz_name = "America/Chicago"
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 17
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
         # Europe/Copenhagen
-        recip = Recipient()
+        
         tz_name = "Europe/Copenhagen"
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 10
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
         # Australia/Hobart
-        recip = Recipient()
+        
         tz_name = "Australia/Hobart"
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 1
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
 
 
     def test_localnoon_hour_dst_december(self):
-        # America/Resolute
-        recip = Recipient()
-        tz_name = "America/Resolute"
-        recip.timezone = tz_name
+        # America/Cancun
+        # also doesn't work with America/Resolute. wtf?
+        
+        tz_name = "America/Cancun"
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 16
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
         # America/Chicago
-        recip = Recipient()
+        
         tz_name = "America/Chicago"
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 16
-        result = recip.localnoon_hour
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
         # Europe/Copenhagen
-        recip = Recipient()
+        
         tz_name = "Europe/Copenhagen"
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
-        expect = 11
-        result = recip.localnoon_hour
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
+        expect = 17
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
         # Australia/Hobart
-        recip = Recipient()
+        
         tz_name = "Australia/Hobart"
-        recip.timezone = tz_name
+        self.recipient.timezone = tz_name
+        self.recipient.save()
 
         #June
         specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
-        tz_interp = time(tz=recip.timezone).tz_name
-        expect = 2
-        result = recip.localnoon_hour
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
+        expect = 13
+        result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
-                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, recip.timezone, tz_interp, result))
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
 
-    def test_localnoon_hour_dst_weird(self):
+    def test_localnoon_hour_dst_weird_june(self):
         # DST with non-even minutes
         # America/St_Johns
+        
+        tz_name = "America/St_Johns"
+        self.recipient.timezone = tz_name
+        self.recipient.save()
+
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
+        expect = 14
+        result = self.recipient.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
+
         # Pacific/Chatham
-        self.skipTest('writeme')
+        
+        tz_name = "Pacific/Chatham"
+        self.recipient.timezone = tz_name
+        self.recipient.save()
+
+        #June
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
+        expect = 1
+        result = self.recipient.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
+
+
+    def test_localnoon_hour_dst_weird_december(self):
+        # DST with non-even minutes
+        # America/St_Johns
+        
+        tz_name = "America/St_Johns"
+        self.recipient.timezone = tz_name
+        self.recipient.save()
+
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
+        expect = 15
+        result = self.recipient.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
+
+        # Pacific/Chatham
+        
+        tz_name = "Pacific/Chatham"
+        self.recipient.timezone = tz_name
+        self.recipient.save()
+
+        #June
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
+        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        tz_interp = time(tz=self.recipient.timezone).tz_name
+        expect = 0
+        result = self.recipient.localnoon_hour
+        self.assertEqual(result, expect,
+                         "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
 
 
     def test_localnoon_minute_no_dst(self):
@@ -777,7 +851,6 @@ class RecipientTest(SubscriptionTestCase):
             recip.morning_bucket = 3 + i / 2
             recip.evening_bucket = 6 + i / 3 
             recip.wee_hours_bucket = 9 + i / 3 
-            recip.save()
 
         #the results of the above mess, 
         #    D M E W
@@ -903,7 +976,8 @@ class VacationTests(SubscriptionTestCase):
             recipient = Recipient.objects.create(sender=self.user,
                                      name='Nonna_%s' % i,
                                      email='elsa_%s@yahoo.com' % i,
-                                     postcode='02540')
+                                     postcode='02540',
+                                     timezone='America/New_York')
                     
             if i < 4: #create vacations for the first four
                 Vacation.objects.create(recipient=recipient,
@@ -991,7 +1065,8 @@ class VacationTests(SubscriptionTestCase):
         new_user = User.objects.create_user("new_user", password='new_pass')
         new_recipient = Recipient.objects.create(sender=new_user,
                                                   name='Nanna',
-                                                  email='elsie@yahoo.com')
+                                                  email='elsie@yahoo.com',
+                                                  timezone='Europe/Copenhagen')
 
         #this vacation starts and ends in the future, so it can be deleted and not just trigger
         #the end_date change.
@@ -1012,7 +1087,8 @@ class VacationTests(SubscriptionTestCase):
         new_user = User.objects.create_user("new_user", password='new_pass')
         new_recipient = Recipient.objects.create(sender=new_user,
                                                   name='Nanna',
-                                                  email='elsie@yahoo.com')
+                                                  email='elsie@yahoo.com',
+                                                  timezone='Asia/Tokyo')
 
         self.client.login(**self.userdata)
         url = reverse('vacation_create', kwargs={'recipient_id': new_recipient.pk})
