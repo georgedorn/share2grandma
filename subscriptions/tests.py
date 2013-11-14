@@ -331,7 +331,7 @@ class RecipientTest(SubscriptionTestCase):
 
     @staticmethod
     def get_interpreted_tz_name(tz_name):
-        localnoon = sanetime.sanetztime(2007, 7, 7, 7, 7, 7, tz=tz_name)
+        localnoon = sanetime.sanetztime(2007, 7, 7, 12, 0, 0, tz=tz_name)
         tz_interp = localnoon.tz
         return tz_interp
 
@@ -583,7 +583,7 @@ class RecipientLocalNoonTest(RecipientTest):
         self.set_recipient_timezone(tz_name)
         tz_interp = self.get_interpreted_tz_name(tz_name)
 
-        expect = 2
+        expect = 5
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
@@ -636,8 +636,8 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "America/Cancun"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 17
         result = self.recipient.localnoon_hour
@@ -649,8 +649,8 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "America/Chicago"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 17
         result = self.recipient.localnoon_hour
@@ -662,8 +662,8 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "Europe/Copenhagen"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 10
         result = self.recipient.localnoon_hour
@@ -675,10 +675,10 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "Australia/Hobart"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 1
+        expect = 2     # cause UTC+10:00 (non-DST because June is winter) -> noon Hobart = 02:00Z
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -692,10 +692,10 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "America/Cancun"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 16
+        expect = 18
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -705,10 +705,10 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "America/Chicago"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 16
+        expect = 18
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -718,10 +718,10 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "Europe/Copenhagen"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 17
+        expect = 11
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -732,10 +732,10 @@ class RecipientLocalNoonTest(RecipientTest):
         self.set_recipient_timezone(tz_name)
 
         #June
-        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 13
+        expect = 1     # cause UTC+11:00 (DST because December is summer) -> noon Hobart = 01:00Z
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -749,8 +749,8 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "America/St_Johns"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 14
         result = self.recipient.localnoon_hour
@@ -763,10 +763,10 @@ class RecipientLocalNoonTest(RecipientTest):
         self.set_recipient_timezone(tz_name)
 
         #June
-        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 6, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 1
+        expect = 23     # cause UTC+12:45 (non-DST because June is winter) -> noon Chatham = 23:15Z
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -779,8 +779,8 @@ class RecipientLocalNoonTest(RecipientTest):
         tz_name = "America/St_Johns"
         self.set_recipient_timezone(tz_name)
 
-        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
         expect = 15
         result = self.recipient.localnoon_hour
@@ -794,10 +794,10 @@ class RecipientLocalNoonTest(RecipientTest):
         self.set_recipient_timezone(tz_name)
 
         #June
-        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, 0, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        specified_local_noon_dt = time(2013, 12, 15, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         tz_interp = time(tz=self.recipient.timezone).tz_name
-        expect = 0
+        expect = 22     # cause UTC+13:45 (non-DST because December is summer) -> noon Chatham = 22:15Z
         result = self.recipient.localnoon_hour
         self.assertEqual(result, expect,
                          "Expected %d for %s in %s (interpreted as %s), got %d" % (expect, specified_local_noon_dt, self.recipient.timezone, tz_interp, result))
@@ -815,9 +815,9 @@ class RecipientDailyWakeupBucketPropertyTest(RecipientTest):
         self.recipient.dailywakeup_hour = 8
         tz_interp = self.get_interpreted_tz_name(tz_name)
 
-        expect = 18
-        specified_local_noon_dt = time(2013, 2, 3, 5, 8, 13, 21, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        expect = 7
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         result = self.recipient.dailywakeup_bucket_property
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
@@ -829,9 +829,9 @@ class RecipientDailyWakeupBucketPropertyTest(RecipientTest):
         self.recipient.dailywakeup_hour = 8
         tz_interp = self.get_interpreted_tz_name(tz_name)
 
-        expect = 15
-        specified_local_noon_dt = time(2013, 2, 3, 5, 8, 13, 21, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        expect = 19
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         result = self.recipient.dailywakeup_bucket_property
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
@@ -843,9 +843,9 @@ class RecipientDailyWakeupBucketPropertyTest(RecipientTest):
         self.recipient.dailywakeup_hour = 8
         tz_interp = self.get_interpreted_tz_name(tz_name)
 
-        expect = 15
-        specified_local_noon_dt = time(2013, 2, 3, 5, 8, 13, 21, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        expect = 27
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         result = self.recipient.dailywakeup_bucket_property
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
@@ -857,9 +857,9 @@ class RecipientDailyWakeupBucketPropertyTest(RecipientTest):
         self.recipient.dailywakeup_hour = 8
         tz_interp = self.get_interpreted_tz_name(tz_name)
 
-        expect = 2
-        specified_local_noon_dt = time(2013, 2, 3, 5, 8, 13, 21, tz=tz_name)
-        self.recipient.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        expect = 47
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         result = self.recipient.dailywakeup_bucket_property
         self.assertEqual(result, expect,
                          "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))

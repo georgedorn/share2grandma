@@ -1,3 +1,4 @@
+from copy import copy
 import uuid
 import random
 from django.core.exceptions import FieldError
@@ -23,6 +24,7 @@ from sanetime import time, delta
 from pytumblr import TumblrRestClient
 from timezone_field import TimeZoneField
 
+from share2grandma.utils import get_today_local_noon_dt, sanetime_to_bucket
 
 
 class GenericSubscription(models.Model):
@@ -139,7 +141,7 @@ class Recipient(models.Model):
         Returns:
             int representing hour of local noon in UTC
         """
-        local_noon_dt = self.__get_local_noon_dt()
+        local_noon_dt = self.get_local_noon_dt()
         utc_noon_dt = local_noon_dt.set_tz('UTC')
         return utc_noon_dt.hour
 
@@ -156,7 +158,7 @@ class Recipient(models.Model):
         Returns:
             int representing *minute* of local noon in UTC
         """
-        local_noon_dt = self.__get_local_noon_dt()
+        local_noon_dt = self.get_local_noon_dt()
         utc_noon_dt = local_noon_dt.set_tz('UTC')
         return utc_noon_dt.minute
 
@@ -192,34 +194,28 @@ class Recipient(models.Model):
         """
         Calculates the daily wakeup bucket for this recipient based on the
         Daily Wakeup delivery time specified by the User, and the Recipient's
-        time zone.  NOTE that the bucket will be 90 minutes (3 buckets) PRIOR to
+        time zone.  NOTE THAT THE BUCKET WILL BE 90 MINUTES (3 BUCKETS) PRIOR to
         the requested delivery time, because Presto delivery times are approximate
         and their email handling system can be slow.
 
         This is a property, but it must be stored in the database for cron jobs.
 
-        Args:
-            dailywakeup_hour. int. An hour of the day, 0-23.
-
         Returns:
             int. The bucket (half-hour division) on the clock during which Daily
                 Wakeup content should be aggregated from queue (if any) and dispatched.
-                90 minutes before the user's selected delivery time.
+                NOTE: 3 buckets (90 min) before the user's selected delivery time!
         """
         if(self.timezone is None or self.tz_name == ''):
             raise FieldError
 
-        local_dailywakeup_dt = self.__get_local_dailywakeup_dt()
-        utc_dailywakeup_dt = local_dailywakeup_dt.set_tz('UTC')
+        local_dailywakeup_dt = self.get_local_dailywakeup_dt()
+        utc_dailywakeup_dt = copy(local_dailywakeup_dt)
+        utc_dailywakeup_dt.set_tz('UTC')
 
         dailywakeup_dispatch_delta = delta(m=-90)
         dailywakeup_dispatch_dt = utc_dailywakeup_dt + dailywakeup_dispatch_delta
 
-        dailywakeup_dispatch_bucket = dailywakeup_dispatch_dt.hour * 2
-        if (dailywakeup_dispatch_dt.minute is not 0 and dailywakeup_dispatch_dt.minute <= 30):
-            dailywakeup_dispatch_bucket += 1
-
-        return dailywakeup_dispatch_bucket
+        return sanetime_to_bucket(dailywakeup_dispatch_dt)
 
 
     def set_dailywakeup_bucket(self, delete=False, save=False):
@@ -346,20 +342,17 @@ class Recipient(models.Model):
         email.attach_alternative(content, mimetype='text/html')
         email.send()
 
-
-    def __get_local_noon_dt(self):
+    def get_local_noon_dt(self):
         """
         Extracted for DRY easy mocking
 
         @return datetime local noon in local timezone
         """
         my_tz_name = self.tz_name
-        now_dt = time(tz=my_tz_name)
-        local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, tz=my_tz_name)
-        return local_noon_dt
+        return get_today_local_noon_dt(my_tz_name)
 
 
-    def __get_local_dailywakeup_dt(self):
+    def get_local_dailywakeup_dt(self):
         """
         Extracted for easy mocking.  Returns None if self.dailywakeup_hour not set.
 

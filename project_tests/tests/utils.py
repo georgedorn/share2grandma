@@ -130,7 +130,7 @@ class GetBucketTests(TestCase):
                              "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
         #specified_local_noon_dt = datetime.combine(date(2013, 6, 15), time(12, 0, 0, 0, tzinfo=tz))
-        #recip.__get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        #recip.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
         #tz_interp = datetime.now(tz=recip.timezone).tzname()
         #expect = 4
         #result = recip.localnoon_hour
