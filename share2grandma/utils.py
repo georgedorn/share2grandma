@@ -44,13 +44,15 @@ def get_current_bucket():
     return sanetime_to_bucket(now)
 
 
-def get_bucket(desired_time, timezone):
+def get_today_bucket_for_time(desired_time, timezone):
     """
     @param time a string in HH:MM:SS
     @param timezone an Olson string (e.g. "America/Los_Angeles")
-    @return int a bucket_t, 0-47, with the bucket on today's date with above time and timezone
+
+    @return int a bucket_t, 0-47, with the bucket on TODAY'S DATE with above time and timezone
     """
-    now = time(tz=timezone)
+    now = get_current_time_utc()    # done this way for mocking
+    now.set_tz(timezone)
     desired_date = now.strftime('%Y-%m-%d')
     desired_time_with_date = "%s %s" % (desired_date, desired_time)
     desired_dt = sanetime.time(desired_time_with_date, tz=timezone)

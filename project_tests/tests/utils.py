@@ -1,5 +1,5 @@
 from django.test import TestCase
-from share2grandma.utils import get_current_bucket, get_current_time_utc, get_bucket
+from share2grandma.utils import get_current_bucket, get_current_time_utc, get_today_bucket_for_time
 from mock import patch
 from sanetime import time
 
@@ -63,28 +63,28 @@ class GetBucketTests(TestCase):
         ## Africa/Dar_es_Salaam
         expect = 14
         tz_olson_name = 'Africa/Dar_es_Salaam'
-        result = get_bucket('10:00:00', tz_olson_name)
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
         self.assertEqual(result, expect,
                          "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
         # Argentina/Buenos_Aires
         expect = 26
         tz_olson_name = 'America/Buenos_Aires'
-        result = get_bucket('10:00:00', tz_olson_name)
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
         self.assertEqual(result, expect,
                          "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
         # America/Phoenix
         expect = 34
         tz_olson_name = 'America/Phoenix'
-        result = get_bucket('10:00:00', tz_olson_name)
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
         self.assertEqual(result, expect,
                          "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
         # Asia/Saigon
         expect = 6
         tz_olson_name = 'Asia/Saigon'
-        result = get_bucket('10:00:00', tz_olson_name)
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
         self.assertEqual(result, expect,
                          "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
@@ -97,7 +97,7 @@ class GetBucketTests(TestCase):
         # Asia/Katmandu		+05:45	+05:45
         expect = 8
         tz_olson_name = 'Asia/Katmandu'
-        result = get_bucket('10:00:00', tz_olson_name)
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
         self.assertEqual(result, expect,
                          "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
@@ -116,16 +116,16 @@ class GetBucketTests(TestCase):
         # America/Resolute
         #June
         with patch(utc_fn_name, make_now_function(month=6, day=15)):
-            expect = 30
-            tz_olson_name = 'America/Resolute'
-            result = get_bucket('10:00:00', tz_olson_name)
+            expect = 32
+            tz_olson_name = 'America/Denver'
+            result = get_today_bucket_for_time('10:00:00', tz_olson_name)
             self.assertEqual(result, expect,
                              "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
         with patch(utc_fn_name, make_now_function(month=12, day=15)):
-            expect = 32
-            tz_olson_name = 'America/Resolute'
-            result = get_bucket('10:00:00', tz_olson_name)
+            expect = 34
+            tz_olson_name = 'America/Denver'
+            result = get_today_bucket_for_time('10:00:00', tz_olson_name)
             self.assertEqual(result, expect,
                              "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
