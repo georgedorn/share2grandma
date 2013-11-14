@@ -147,23 +147,6 @@ class Recipient(models.Model):
 
 
     @property
-    def localnoon_minute(self):
-        """
-        Given a timezone, figure out local noon.  Convert that to UTC
-        and return the *minute* in UTC.  This is useful for weird
-        time zones offset by 15, 30, 45 min etc.
-
-        This is a property because doing it thusly is DST-resistant.
-
-        Returns:
-            int representing *minute* of local noon in UTC
-        """
-        local_noon_dt = self.get_local_noon_dt()
-        utc_noon_dt = local_noon_dt.set_tz('UTC')
-        return utc_noon_dt.minute
-
-
-    @property
     def localnoon_bucket(self):
         """
         Given a timezone, figure out local noon.  Convert that to UTC, then
@@ -180,13 +163,7 @@ class Recipient(models.Model):
         Returns:
             int between 0 and 47.  See description.
         """
-        localnoon_bucket = self.localnoon_hour * 2    # buckets are half-hourly...
-
-        # ...except when not. Handle time zones +15, +30 etc
-        if self.localnoon_minute:
-            localnoon_bucket += 1
-
-        return localnoon_bucket
+        return sanetime_to_bucket(self.get_local_noon_dt())
 
 
     @property
