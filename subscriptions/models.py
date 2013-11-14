@@ -361,13 +361,16 @@ class Recipient(models.Model):
 
     def __get_local_dailywakeup_dt(self):
         """
-        Extracted for easy mocking
+        Extracted for easy mocking.  Returns None if self.dailywakeup_hour not set.
 
         @return datetime today's dailywakeup hour in local timezone
         """
+        if self.dailywakeup_hour is None:
+            return None
+
         my_tz_name = self.tz_name
         now_dt = time(tz=my_tz_name)
-        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, self.dailywakeup_hour, 0, 0, 0, tz=my_tz_name)
+        local_dailywakeup_dt = time(now_dt.year, now_dt.month, now_dt.day, int(self.dailywakeup_hour), 0, 0, 0, tz=my_tz_name)
         return local_dailywakeup_dt
 
 
