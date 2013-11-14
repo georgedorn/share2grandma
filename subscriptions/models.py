@@ -124,27 +124,6 @@ class Recipient(models.Model):
         return Recipient.objects.filter(vacations__start_date__lt=now,
                                         vacations__end_date__gt=now).distinct()
 
-    @property
-    def localnoon_hour(self):
-        """
-        Given a timezone, figure out local noon.  Convert that to UTC
-        and return the hour.
-
-        This is a property because doing it thusly is DST-resistant.
-
-        It's basically floor(localnoon_utc_dt) in terms of hours (the int
-        returned) for weird time zones west of Greenwich, and
-        ceil(localnoon_utc_dt) for weird time zones east, where weird
-        time zones are thoses that have a UTC offset in minutes % 60 != 0.
-        ... I think.
-
-        Returns:
-            int representing hour of local noon in UTC
-        """
-        local_noon_dt = self.get_local_noon_dt()
-        utc_noon_dt = local_noon_dt.set_tz('UTC')
-        return utc_noon_dt.hour
-
 
     @property
     def localnoon_bucket(self):
