@@ -113,6 +113,11 @@ class TumblrSubscriptionProcessorTest(TestCase):
 class SubscriptionTestCase(TestCase):
 
     def render_variable_in_template(self, variable):
+        """
+        Given a variable, use django's template engine to render it into a string.
+        Particularly useful for objects like datetimes which may
+        vary in how they are displayed from locale to locale.
+        """
         t = Template('{{ variable }}')
         c = Context({"variable": variable})
         return t.render(c)
@@ -329,12 +334,18 @@ class RecipientTest(SubscriptionTestCase):
 
 
     def set_recipient_timezone(self, tz_name):
+        """
+        Sets the timezone on the fixture recipient.
+        """
         self.recipient.timezone = tz_name
         self.recipient.save()
 
 
     @staticmethod
     def get_interpreted_tz_name(tz_name):
+        """
+        Helper method to convert a timezone name to a proper timezone object.
+        """
         localnoon = sanetime.sanetztime(2007, 7, 7, 12, 0, 0, tz=tz_name)
         tz_interp = localnoon.tz
         return tz_interp
@@ -502,18 +513,15 @@ class RecipientViewsTest(RecipientTest):
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
 
-class RecipientMiscTimeTest(RecipientTest):
+class RecipientBucketTest(RecipientTest):
     def setUp(self):
-        super(RecipientMiscTimeTest, self).setUp()
+        super(RecipientBucketTest, self).setUp()
 
     def test_dailywakeup_bucket_property_no_recip_dailywakeup_hour(self):
-        caught = False
-        try:
-            t = self.recipient.dailywakeup_bucket_property
-        except Exception, ex:
-            caught = True
-
-        self.assertTrue(caught)
+        """
+        If the dailywakeup_hour hasn't been set, the property should also be unset.
+        """
+        self.assertIsNone(self.recipient.dailywakeup_bucket_property)
 
 
     def test_dailywakeup_bucket_property_emptystring_recip_timezone(self):
@@ -521,26 +529,15 @@ class RecipientMiscTimeTest(RecipientTest):
         self.recipient.dailywakeup_hour = randrange(0, 24)
         self.recipient.timezone = ''
 
-        caught_empty = False
-        try:
-            t = self.recipient.dailywakeup_bucket_property
-        except FieldError:
-            caught_empty = True
+        self.assertRaises(FieldError, lambda: self.recipient.dailywakeup_bucket_property) #lambda needed because properties aren't callables
 
-        self.assertTrue(caught_empty)
 
     def test_dailywakeup_bucket_property_none_recip_timezone(self):
         # now try a null
         self.recipient.dailywakeup_hour = randrange(0, 24)
         self.recipient.timezone = None
 
-        caught_null = False
-        try:
-            t = self.recipient.dailywakeup_bucket_property
-        except FieldError:
-            caught_null = True
-
-        self.assertTrue(caught_null)
+        self.assertRaises(FieldError, lambda: self.recipient.dailywakeup_bucket_property) #lambda needed because properties aren't callables
 
 
 
@@ -724,9 +721,15 @@ class RecipientDispatchTest(RecipientTest):
         subscription = TumblrSubscription.objects.create(recipient=self.recipient,
                                           short_name='demo',
                                           pretty_name='demo',
+                                          last_post_ts=0, 
                                           )
         self.recipient.deliver(0)
 
+        subscription = TumblrSubscription.objects.get(pk=subscription.pk)
+
+        #@todo:  this assertion should actually be in TumblrSubscriptionProcessorTest.test_pull_content
+        self.assertGreater(subscription.last_post_ts, 0, "Delivering tumblr subscription didn't update its last_post_ts.")
+        
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]
 
@@ -757,8 +760,11 @@ class VacationTests(SubscriptionTestCase):
 
     def test_is_not_on_vacation_timezone(self):
         """
-A test of an edge case where a recipient's vacation is in a different time zone than the server.
-"""
+        Create a vacation in another timezone such that if the offset isn't accounted
+        for, it appears that the recipient is currently on vacation.
+        
+        Assert that the recipient isn't on vacation.
+        """
         timezone = pytz.timezone('Europe/Amsterdam')
         self.recipient.timezone = timezone
         self.recipient.save()
@@ -781,9 +787,12 @@ A test of an edge case where a recipient's vacation is in a different time zone 
         
     def test_is_on_vacation_timezone(self):
         """
-Like previous test, create a vacation in another timezone, but
-make it overlap the current time in the server's timezone.
-"""
+        Create a vacation in another timezone such that if the offset
+        isn't accounted for, the vacation appears to be 6 hours in the future 
+        (and therefore not yet started).
+        
+        Assert that is has started.
+        """
         timezone = pytz.timezone('Europe/Amsterdam') # 8-9 hours ahead
         self.recipient.timezone = timezone
         self.recipient.save()

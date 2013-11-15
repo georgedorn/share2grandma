@@ -4,39 +4,32 @@ from mock import patch
 from sanetime import time
 
 
-def make_now_function(**kwargs):
+def make_now_function(year=2013, month=11, day=12, hour=0, minute=0, second=0, tz='UTC'):
     """
-    Generates a mock function for datetime.utcnow(), which when called
+    Generates a mocka function for, which when called
     returns the specified datetime object instead of utcnow().
+    
+    Used for mocking share2grandma.utils.get_current_time_utc.
     """
 
-    defaults = {'year': 2013,
-                'month': 11,
-                'day': 12,
-                'hour': 0,
-                'minute': 0,
-                'second': 0,
-                }
-
-    defaults.update(kwargs)
-    my = defaults
-
-    args = [my['year'], my['month'], my['day'], my['hour'], my['minute'], my['second']]
+    #convert kwargs to positional args, as sanetime sadly doesn't take kwargs.
+    args = [year, month, day, hour, minute, second]
 
     def my_func():
-        dt = time(*args, tz='UTC')
+        dt = time(*args, tz=tz)
         return dt
 
     return my_func
 
 
+#Function name to patch() with make_now_function instead.
 utc_fn_name = 'share2grandma.utils.get_current_time_utc'
 
 class UtilsTests(TestCase):
     def test_get_current_time_utc(self):
         """
-        Mostly a test for coverage purposes; get_current_time_utc() is
-        a patchable wrapper for datetime.utcnow().
+        Mostly a test for coverage purposes, but also ensures get_current_time_utc() isn't doing
+        something crazy under normal circumstances.
         """
         now = get_current_time_utc()
         real_now = time(tz='UTC')
@@ -48,6 +41,9 @@ class UtilsTests(TestCase):
 class GetBucketTests(TestCase):
 
     def test_get_bucket_ultra_basic_tests(self):
+        """
+        Simple tests of get_current_bucket().
+        """
         with patch(utc_fn_name, make_now_function(hour=13, minute=48)):
             bucket = get_current_bucket()
             self.assertEqual(bucket, 27)

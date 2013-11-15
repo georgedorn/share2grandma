@@ -22,12 +22,6 @@ class RecipientCreateView(LoginRequiredMixin, CreateView):
     model = Recipient
     form_class = RecipientForm
 
-# @todo:  User can set a time to send a daily wakeup, so check for that and create/update if needed
-#    def post(self, request):
-#        if request.POST.get('daily_wakeup_time'):
-#            #do the daily wakeup stuff
-#        return super(RecipientCreateView, self).post(self, request)
-
 
 class RecipientDetailView(LoginRequiredMixin, DetailView):
     model = Recipient
@@ -39,8 +33,6 @@ class SubscriptionDetailView(LoginRequiredMixin, DetailView):
 
 class GenericSubscriptionListView(LoginRequiredMixin, ListView):
     queryset = GenericSubscription.objects.all()
-#    queryset = Book.objects.filter(publisher__name="Acme Publishing")
-#    template_name = "books/acme_list.html"
 
 
 class SubscriptionDeleteView(LoginRequiredMixin, DeleteView):
