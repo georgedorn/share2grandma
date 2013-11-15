@@ -15,6 +15,10 @@ from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 import sanetime
 from sanetime import time, delta
 
+from django.utils import timezone as dutz
+from datetime import datetime, timedelta
+import pytz
+
 from subscriptions.forms import VacationForm
 from django.template.context import Context
 from django.template.base import Template
@@ -337,9 +341,9 @@ class RecipientTest(SubscriptionTestCase):
 
 
 
-class RecipientMiscTest(RecipientTest):
+class RecipientViewsTest(RecipientTest):
     def setUp(self):
-        super(RecipientMiscTest, self).setUp()
+        super(RecipientViewsTest, self).setUp()
 
     def test_create_recipient_form_exists(self):
         """
@@ -665,12 +669,14 @@ class RecipientDispatchTest(RecipientTest):
                               name="Recip%s" % i,
                               email='recip%s@yahoo.com' % i,
                               postcode='11111',
+                              timezone='America/Los_Angeles' #doesn't matter, we're overriding buckets below
                               )
             #these buckets make no sense, but we're testing the query and need some overlay
             recip.dailywakeup_bucket = i / 2 
             recip.morning_bucket = 3 + i / 2
             recip.evening_bucket = 6 + i / 3 
-            recip.wee_hours_bucket = 9 + i / 3 
+            recip.wee_hours_bucket = 9 + i / 3
+            recip.save() 
 
         #the results of the above mess, 
         #    D M E W
@@ -731,57 +737,68 @@ class RecipientDispatchTest(RecipientTest):
 
         
 class VacationTests(SubscriptionTestCase):
+    """
+    Tests of the vacation feature.
     
+    @TODO:  Refactor both these tests and the vacation form to use sanetime instead of datetime, pytz and d.u.timezone
+    """
     def test_not_on_vacation(self):
         self.assertFalse(self.recipient.is_on_vacation())
 
     def test_is_on_vacation_obvious(self):
-        now = time()
-        last_week = now - delta(hours=7*24)
-        next_week = now + delta(hours=7*24)
+        now = dutz.now()
+        last_week = now - timedelta(days=7)
+        next_week = now + timedelta(days=7)
         Vacation.objects.create(recipient=self.recipient,
-                                start_date=last_week.datetime,
-                                end_date=next_week.datetime)
+                                start_date=last_week,
+                                end_date=next_week)
         
         self.assertTrue(self.recipient.is_on_vacation())
 
     def test_is_not_on_vacation_timezone(self):
         """
-        A test of an edge case where a recipient's vacation is in a different time zone than the server.
-        """
-        timezone = 'Europe/Amsterdam'
+A test of an edge case where a recipient's vacation is in a different time zone than the server.
+"""
+        timezone = pytz.timezone('Europe/Amsterdam')
         self.recipient.timezone = timezone
         self.recipient.save()
-
-        start = time(tz=timezone) - delta(hours=2)
-        end = time(tz=timezone) + delta(hours=2)
-
+        now = datetime.now()
+        
+        #the trick here is that pytz.timezone.localize takes a naive datetime
+        #and appends a timezone without altering the datetime.
+        #e.g. if it is 8pm now in America/Los_Angeles,
+        #this results in a start of 6pm in Europe/Amsterdam
+        start = timezone.localize(now - timedelta(hours=2))
+        #and this would result in end of 10pm in Europe/Amsterdam
+        end = timezone.localize(now + timedelta(hours=2))
+        
         Vacation.objects.create(recipient=self.recipient,
-                                start_date=start.datetime,
-                                end_date=end.datetime)
+                                start_date=start,
+                                end_date=end)
         #Amsterdam is 8-9 hours ahead depending on DST, so this 4-hour vacation
         #was actually over about 4 hours ago
         self.assertFalse(self.recipient.is_on_vacation())
         
     def test_is_on_vacation_timezone(self):
         """
-        Like previous test, create a vacation in another timezone, but
-        make it overlap the current time in the server's timezone.
-        """
-        timezone = 'Europe/Amsterdam' # 8-9 hours ahead
+Like previous test, create a vacation in another timezone, but
+make it overlap the current time in the server's timezone.
+"""
+        timezone = pytz.timezone('Europe/Amsterdam') # 8-9 hours ahead
         self.recipient.timezone = timezone
         self.recipient.save()
         
-        now = time(tz=timezone)
-        start = now + delta(hours=6) #less than 8-9 hours from now
-        end = now - delta(hours=12)
+        now = datetime.now()
+        
+        start = timezone.localize(now + timedelta(hours=6)) #less than 8-9 hours from now
+        end = timezone.localize(now + timedelta(hours=12))
         
         Vacation.objects.create(recipient=self.recipient,
-                                start_date=start.datetime,
-                                end_date=end.datetime
+                                start_date=start,
+                                end_date=end
                                 )
         self.assertTrue(self.recipient.is_on_vacation())
-                                
+                                        
     def test_get_vacationing_recipients(self):
         """
         Tests getting the set of recipients currently on vacation.
