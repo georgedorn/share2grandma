@@ -72,6 +72,9 @@ def get_today_bucket_for_time(desired_time, timezone):
 
 
 def get_today_local_noon_dt(my_tz_name):
+    """
+    Given a timezone, get a sanetime object representing today's noon in that timezone.
+    """
     now_dt = time(tz=my_tz_name)
     local_noon_dt = time(now_dt.year, now_dt.month, now_dt.day, 12, 0, 0, 0, tz=my_tz_name)
     return local_noon_dt
