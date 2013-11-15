@@ -98,14 +98,22 @@ class GetBucketTests(TestCase):
                          "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
 
-        ## Asia/Calcutta		+05:30	+05:30
-        #self.assertEqual(result, expect,
-        #                 "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
-        #
-        ## Pacific/Marquesas
-        #self.assertEqual(result, expect,
-        #                 "Expected %d for %s (interpreted as %s), got %d" % (expect, recip.timezone, tz_interp, result))
-        #self.skipTest('writeme')
+        # Asia/Calcutta		+05:30	+05:30
+        expect = 9
+        tz_olson_name = 'Asia/Calcutta'
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
+        
+        self.assertEqual(result, expect,
+                         "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
+
+        # Pacific/Marquesas
+        expect = 39
+        tz_olson_name = 'Pacific/Marquesas'
+
+        result = get_today_bucket_for_time('10:00:00', tz_olson_name)
+        
+        self.assertEqual(result, expect,
+                         "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
 
     def test_get_bucket_summerwinter_dst_zones(self):
@@ -118,6 +126,7 @@ class GetBucketTests(TestCase):
             self.assertEqual(result, expect,
                              "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
+        #December
         with patch(UTC_FN_NAME, make_now_function(month=12, day=15)):
             expect = 34
             tz_olson_name = 'America/Denver'
