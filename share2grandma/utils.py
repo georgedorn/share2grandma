@@ -3,7 +3,7 @@ from sanetime import time, delta
 
 def get_current_time_utc():
     """
-    A wrapper for datetime.utcnow() which can be mocked.
+    Returns a sanetime.SaneTime object representing the current time in UTC.
     """
     return sanetime.time(tz='UTC')
 
@@ -46,15 +46,26 @@ def get_current_bucket():
 
 def get_today_bucket_for_time(desired_time, timezone):
     """
+    Given a time of day in a user's timezone, figure out 
+    what bucket that time maps to for today.
+    
+    This can vary with DST, which is the reason this method exists.
+    
     @param time a string in HH:MM:SS
     @param timezone an Olson string (e.g. "America/Los_Angeles")
 
     @return int a bucket_t, 0-47, with the bucket on TODAY'S DATE with above time and timezone
     """
-    now = get_current_time_utc()    # done this way for mocking
+    now = get_current_time_utc() # Use get_current_time_utc() to allow for mocking.
     now.set_tz(timezone)
+    
+    #generate a string version of today's date (in user's timezone)
     desired_date = now.strftime('%Y-%m-%d')
+
+    #Merge time of day with date, yielding something like 12:24:00 2012-07-30
     desired_time_with_date = "%s %s" % (desired_date, desired_time)
+
+    #Create a new sanetime object using the full string and the user's timezone
     desired_dt = sanetime.time(desired_time_with_date, tz=timezone)
 
     return sanetime_to_bucket(desired_dt)
