@@ -23,7 +23,7 @@ def make_now_function(year=2013, month=11, day=12, hour=0, minute=0, second=0, t
 
 
 #Function name to patch() with make_now_function instead.
-utc_fn_name = 'share2grandma.utils.get_current_time_utc'
+UTC_FN_NAME = 'share2grandma.utils.get_current_time_utc'
 
 class UtilsTests(TestCase):
     def test_get_current_time_utc(self):
@@ -44,14 +44,14 @@ class GetBucketTests(TestCase):
         """
         Simple tests of get_current_bucket().
         """
-        with patch(utc_fn_name, make_now_function(hour=13, minute=48)):
+        with patch(UTC_FN_NAME, make_now_function(hour=13, minute=48)):
             bucket = get_current_bucket()
             self.assertEqual(bucket, 27)
 
-        with patch(utc_fn_name, make_now_function(hour=23, minute=59)):
+        with patch(UTC_FN_NAME, make_now_function(hour=23, minute=59)):
             self.assertEqual(get_current_bucket(), 47)
 
-        with patch(utc_fn_name, make_now_function(hour=0, minute=0)):
+        with patch(UTC_FN_NAME, make_now_function(hour=0, minute=0)):
             self.assertEqual(get_current_bucket(), 0)
 
 
@@ -111,14 +111,14 @@ class GetBucketTests(TestCase):
     def test_get_bucket_summerwinter_dst_zones(self):
         # America/Resolute
         #June
-        with patch(utc_fn_name, make_now_function(month=6, day=15)):
+        with patch(UTC_FN_NAME, make_now_function(month=6, day=15)):
             expect = 32
             tz_olson_name = 'America/Denver'
             result = get_today_bucket_for_time('10:00:00', tz_olson_name)
             self.assertEqual(result, expect,
                              "Expected %d for %s, got %d" % (expect, tz_olson_name, result))
 
-        with patch(utc_fn_name, make_now_function(month=12, day=15)):
+        with patch(UTC_FN_NAME, make_now_function(month=12, day=15)):
             expect = 34
             tz_olson_name = 'America/Denver'
             result = get_today_bucket_for_time('10:00:00', tz_olson_name)
