@@ -2,6 +2,7 @@
 
 import os
 from os import getenv
+from django.utils.translation import ugettext_lazy as _
 
 SETTINGS_PATH = os.path.dirname(__file__)
 PROJECT_PATH = os.path.dirname(SETTINGS_PATH)
@@ -26,12 +27,12 @@ TIME_ZONE = 'America/Los_Angeles'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
 
-gettext = lambda s : s
+#Available languages.  See https://docs.djangoproject.com/en/1.5/topics/i18n/translation/
 LANGUAGES = [
-			  ('es', gettext('European Spanish')),
-			  ('es-mx', gettext('Mexican Spanish')),
-			  ('en-us', gettext('American English')),
-			  ('en-gb', gettext('British English')),
+			  ('es', _('European Spanish')),
+			  ('es-mx', _('Mexican Spanish')),
+			  ('en-us', _('American English')),
+			  ('en-gb', _('British English')),
 			]
 
 SITE_ID = 1
