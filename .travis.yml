@@ -8,6 +8,6 @@ install:
   - pip install -r requirements.txt --use-mirrors
   - pip install coverage coveralls --use-mirrors
 script: 
-  - coverage run --omit="*/site-packages/*","*/src/*","*/migrations/*" ./manage.py test --settings=share2grandma.settings.travis
+  - coverage run --branch --omit="*/site-packages/*","*/src/*","*/migrations/*" ./manage.py test --settings=share2grandma.settings.travis
 after_success:
   - coveralls
