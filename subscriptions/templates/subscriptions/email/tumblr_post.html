@@ -1,0 +1,8 @@
+{% load i18n %}
+{% trans "Posted by: " %} {{ post.0.blog_name}}
+{% for post in post_list %}
+<p>
+{{ post.date }}<br>
+{{ post.body }}<br>
+{{ post.caption }}<br>
+{% endfor %}

@@ -2,6 +2,7 @@
 
 import os
 from os import getenv
+from django.utils.translation import ugettext_lazy as _
 
 SETTINGS_PATH = os.path.dirname(__file__)
 PROJECT_PATH = os.path.dirname(SETTINGS_PATH)
@@ -26,6 +27,14 @@ TIME_ZONE = 'America/Los_Angeles'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
 
+#Available languages.  See https://docs.djangoproject.com/en/1.5/topics/i18n/translation/
+LANGUAGES = [
+			  ('es', _('European Spanish')),
+			  ('es-mx', _('Mexican Spanish')),
+			  ('en-us', _('American English')),
+			  ('en-gb', _('British English')),
+			]
+
 SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
@@ -34,7 +43,7 @@ USE_I18N = True
 
 # If you set this to False, Django will not format dates, numbers and
 # calendars according to the current locale.
-USE_L10N = False
+USE_L10N = True
 
 DATE_FORMAT = "Y-m-d"
 

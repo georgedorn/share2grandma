@@ -1,4 +1,4 @@
-Django<=1.6
+Django<1.6
 psycopg2==2.5.1
 South==0.7.6
 django-social-auth==0.7.23
@@ -6,4 +6,6 @@ django-braces==1.0.0
 -e git://github.com/tumblr/pytumblr.git#egg=PyTumblr-dev
 -e git://github.com/georgedorn/django-registration.git#egg=django_registration-dev
 py-bcrypt==0.3
-django-timezone-field==0.4
+django-timezone-field==1.0
+sanetime==4.2.3
+pytz>=2013.7

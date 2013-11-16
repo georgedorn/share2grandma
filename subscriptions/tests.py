@@ -1,18 +1,49 @@
+from random import randrange
 import re
-from datetime import datetime, timedelta
+
+from mock import Mock
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.core import mail
 from django.test import TestCase
-from django.utils import timezone as dutz
+from django.core.exceptions import FieldError
 
 from .models import TumblrSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
-from .tumblr_subscription_processor import TumblrSubscriptionProcessor
+
+import sanetime
+from sanetime import time, delta
+
+from django.utils import timezone as dutz
+from datetime import datetime, timedelta
 import pytz
-import locale
 
 from subscriptions.forms import VacationForm
+from django.template.context import Context
+from django.template.base import Template
+from subscriptions.models import GenericSubscription
+
+
+
+class GenericSubscriptionTest(TestCase):
+    """
+    Tests of the generic subscription model.
+    Probably silly, other than proving the API.
+    """
+    
+    def test_pull_content(self):
+        foo = GenericSubscription()
+        self.assertRaises(NotImplementedError, foo.pull_content)
+        
+    def test_pull_metadata(self):
+        foo = GenericSubscription()
+        self.assertRaises(NotImplementedError, foo.pull_metadata)
+    
+    def test_format_content(self):
+        foo = GenericSubscription()
+        self.assertRaises(NotImplementedError, foo.format_content, "This is content")
+
 
 class TumblrSubscriptionProcessorTest(TestCase):
     """
@@ -23,26 +54,25 @@ class TumblrSubscriptionProcessorTest(TestCase):
         self.user = User.objects.create_user('derplord')
         self.recipient = Recipient.objects.create(sender=self.user,
                                                   name='Grrrranny',
-                                                  email='mams@aol.com')
+                                                  email='mams@aol.com',
+                                                  timezone='America/Phoenix')
         self.subscription = TumblrSubscription(recipient=self.recipient,
                                                short_name='demo')
-        self.tumblr = TumblrSubscriptionProcessor(self.subscription)
 
 
     def test_get_blog_info(self):
-        info = self.tumblr.setup_subscription()
-
-        self.assertTrue('default_avatar' in info['avatar'])
-        self.assertEqual('Demo', info['pretty_name'])
-        self.assertEqual(1269024321, info['last_post_ts'])
-
+        self.subscription.pull_metadata()
+        self.assertTrue('default_avatar' in self.subscription.avatar)
+        self.assertEqual('Demo', self.subscription.pretty_name)
+        self.assertEqual(1269024321, self.subscription.last_post_ts)
+        
 
     def test_instantiate_badblog(self):
-        my_subscription = TumblrSubscription(recipient=self.recipient,
-                                             short_name='zmxmdmcnnjjncn')
         caught = False
         try:
-            TumblrSubscriptionProcessor(my_subscription)
+            my_subscription = TumblrSubscription(recipient=self.recipient,
+                                                 short_name='zmxmdmcnnjjncn')
+            my_subscription.pull_metadata()
         except KeyError, e:
             caught = True
 
@@ -81,6 +111,18 @@ class TumblrSubscriptionProcessorTest(TestCase):
 
     
 class SubscriptionTestCase(TestCase):
+
+    def render_variable_in_template(self, variable):
+        """
+        Given a variable, use django's template engine to render it into a string.
+        Particularly useful for objects like datetimes which may
+        vary in how they are displayed from locale to locale.
+        """
+        t = Template('{{ variable }}')
+        c = Context({"variable": variable})
+        return t.render(c)
+
+    
     def setUp(self):
         self.userdata = {'username':'xenuuu',
                          'password':'test_pass'}
@@ -90,7 +132,8 @@ class SubscriptionTestCase(TestCase):
         self.recipient = Recipient.objects.create(sender=self.user,
                                                   name='Nonna',
                                                   email='elsa@yahoo.com',
-                                                  postcode='02540')
+                                                  postcode='02540',
+                                                  timezone='America/New_York')
 
 
 class ProfileTestCase(SubscriptionTestCase):
@@ -126,7 +169,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         subscription = TumblrSubscription(short_name='demo')
         subscription.recipient = self.recipient
 
-        subscription.update_from_tumblr()
+        subscription.pull_metadata()
 
         self.assertTrue('default_avatar' in subscription.avatar)
         self.assertEqual('Demo', subscription.pretty_name)
@@ -160,8 +203,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.client.login(**self.userdata)
 
         res = self.client.post(self.url_subscription_create_tumblr,
-            {'    ':self.user.pk,
-             'recipient':self.recipient.pk,
+            {'recipient':self.recipient.pk,
              'short_name':'demo',
              'enabled':True},
             follow=True)
@@ -291,6 +333,29 @@ class RecipientTest(SubscriptionTestCase):
         self.url_recipient_create = reverse('recipient_create')
 
 
+    def set_recipient_timezone(self, tz_name):
+        """
+        Sets the timezone on the fixture recipient.
+        """
+        self.recipient.timezone = tz_name
+        self.recipient.save()
+
+
+    @staticmethod
+    def get_interpreted_tz_name(tz_name):
+        """
+        Helper method to convert a timezone name to a proper timezone object.
+        """
+        localnoon = sanetime.sanetztime(2007, 7, 7, 12, 0, 0, tz=tz_name)
+        tz_interp = localnoon.tz
+        return tz_interp
+
+
+
+class RecipientViewsTest(RecipientTest):
+    def setUp(self):
+        super(RecipientViewsTest, self).setUp()
+
     def test_create_recipient_form_exists(self):
         """
         Test that the form is there and non-500, etc
@@ -323,10 +388,7 @@ class RecipientTest(SubscriptionTestCase):
             granny_data,
             follow=True)
 
-        self.assertTrue(Recipient.objects.count() == 2)  # includes fixture
-
         obj = Recipient.objects.get(name='Granny Em')
-        self.assertTrue(isinstance(obj, Recipient))
 
         success = False
         for url, status in res.redirect_chain:
@@ -335,6 +397,7 @@ class RecipientTest(SubscriptionTestCase):
                     # this redirect chain is a bit weird and might change, so be flexible..
                     # we got redirected to the detail url for what we just created, so yay
                     success = True
+                    break
         self.assertTrue(success)
 
         granny_data.pop('sender')     # not looking for pk in output
@@ -343,6 +406,35 @@ class RecipientTest(SubscriptionTestCase):
         for s in granny_data.values():
             self.assertTrue(s in res.rendered_content,
                             'Expected "%s" in rendered_content' % s)
+
+    def test_create_via_ui_with_dailywakeup(self):
+        """
+        Another test of creation, this time ensuring that setting a daily wakeup time
+        also results in the user showing up in the daily wakeup batch.
+        """
+        self.client.login(**self.userdata)
+
+        granny_data = \
+            {'sender':self.user.pk, #@todo: Sender is not posted, should be in request
+             'sender_name':'bobby',
+             'sender_phone':'111-222-3344',
+             'name':'Granny Em',
+             'email':'emgran@aol.com',
+             'timezone':'America/Indiana/Knox',
+             'dailywakeup_hour':'6'
+             }
+
+        res = self.client.post(self.url_recipient_create,
+            granny_data,
+            follow=True)
+
+        self.assertEqual(Recipient.objects.count(), 2)  # includes fixture
+
+        obj = Recipient.objects.get(name='Granny Em')
+        dailywakeup_bucket = obj.dailywakeup_bucket
+        self.assertTrue(dailywakeup_bucket is not None)
+        
+        self.assertTrue(obj in Recipient.get_recipients_due_for_processing(bucket=dailywakeup_bucket))
 
 
     def test_delete(self):
@@ -378,18 +470,22 @@ class RecipientTest(SubscriptionTestCase):
     def test_detail_view(self):
         """
         Test that the Recipient detail view displays the right stuff
+
+        @todo:  This is extremely fragile and should be rewritten to test fields explicitly
         """
         self.client.login(**self.userdata)
 
         res = self.client.get(reverse('recipient_detail', kwargs={'pk':self.recipient.pk}),
             follow=True)
 
-        for field in self.recipient._meta.fields:
-            v = getattr(self.recipient, field.name)
-
-            self.assertTrue(str(v) in res.rendered_content,
+        expected_fields = ('sender_name', 'sender_phone', 'name', 'add_date',
+                           'email', 'postcode')
+        
+        for field in expected_fields:
+            v = getattr(self.recipient, field)
+            rendered_variable = self.render_variable_in_template(v)
+            self.assertTrue(rendered_variable in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content %s" % (v, field, res.content))
-
 
     def test_detail_view_somebody_elses_recipient(self):
         self.skipTest('writeme')
@@ -398,24 +494,257 @@ class RecipientTest(SubscriptionTestCase):
     def test_dashboard_recipient_display(self):
         """
         Test that the Recipient shows up on the dashboard
+        
+        @todo:  This is extremely fragile and should be rewritten to test fields explicitly
         """
         self.client.login(**self.userdata)
 
         res = self.client.get(reverse('dashboard_main'), follow=True)
+        
+        
+        expected_fields = ('sender_name', 'sender_phone', 'name', 'add_date',
+                           'email', 'postcode')
+        
+        for field in expected_fields:
+            v = getattr(self.recipient, field)
+            rendered = self.render_variable_in_template(v)
 
-        for field in self.recipient._meta.fields:
-            v = getattr(self.recipient, field.name)
-
-            if field.name == 'timezone':
-                continue    # not currently displayed.
-
-            self.assertTrue(str(v) in res.rendered_content,
+            self.assertTrue(rendered in res.rendered_content,
                             "Expected value '%s' for field '%s' in rendered content" % (v, field))
 
 
+class RecipientBucketTest(RecipientTest):
+    def setUp(self):
+        super(RecipientBucketTest, self).setUp()
 
+    def test_dailywakeup_bucket_property_no_recip_dailywakeup_hour(self):
+        """
+        If the dailywakeup_hour hasn't been set, the property should also be unset.
+        """
+        self.assertIsNone(self.recipient.dailywakeup_bucket_property)
+
+
+    def test_dailywakeup_bucket_property_emptystring_recip_timezone(self):
+        # empty string
+        self.recipient.dailywakeup_hour = randrange(0, 24)
+        self.recipient.timezone = ''
+
+        self.assertRaises(FieldError, lambda: self.recipient.dailywakeup_bucket_property) #lambda needed because properties aren't callables
+
+
+    def test_dailywakeup_bucket_property_none_recip_timezone(self):
+        # now try a null
+        self.recipient.dailywakeup_hour = randrange(0, 24)
+        self.recipient.timezone = None
+
+        self.assertRaises(FieldError, lambda: self.recipient.dailywakeup_bucket_property) #lambda needed because properties aren't callables
+
+
+
+class RecipientDailyWakeupBucketPropertyTest(RecipientTest):
+    def setUp(self):
+        super(RecipientDailyWakeupBucketPropertyTest, self).setUp()
+
+    def test_dailywakeup_bucket_property_no_dst_01(self):
+        # Africa/Dar_es_Salaam
+        tz_name = 'Africa/Dar_es_Salaam'
+        self.set_recipient_timezone(tz_name)
+        self.recipient.dailywakeup_hour = 8
+        tz_interp = self.get_interpreted_tz_name(tz_name)
+
+        expect = 7
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        result = self.recipient.dailywakeup_bucket_property
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
+
+    def test_dailywakeup_bucket_property_no_dst_02(self):
+        # Argentina/Buenos_Aires
+        tz_name = 'America/Buenos_Aires'
+        self.set_recipient_timezone(tz_name)
+        self.recipient.dailywakeup_hour = 8
+        tz_interp = self.get_interpreted_tz_name(tz_name)
+
+        expect = 19
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        result = self.recipient.dailywakeup_bucket_property
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
+
+    def test_dailywakeup_bucket_property_no_dst_03(self):
+        # America/Phoenix
+        tz_name = 'America/Phoenix'
+        self.set_recipient_timezone(tz_name)
+        self.recipient.dailywakeup_hour = 8
+        tz_interp = self.get_interpreted_tz_name(tz_name)
+
+        expect = 27
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        result = self.recipient.dailywakeup_bucket_property
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
+
+    def test_dailywakeup_bucket_property_no_dst_04(self):
+        # Asia/Saigon
+        tz_name = 'Asia/Saigon'
+        self.set_recipient_timezone(tz_name)
+        self.recipient.dailywakeup_hour = 8
+        tz_interp = self.get_interpreted_tz_name(tz_name)
+
+        expect = 47
+        specified_local_noon_dt = time(2013, 2, 3, 12, 0, 0, tz=tz_name)
+        self.recipient.get_local_noon_dt = Mock(return_value=specified_local_noon_dt)
+        result = self.recipient.dailywakeup_bucket_property
+        self.assertEqual(result, expect,
+                         "Expected %d for %s (interpreted as %s), got %d" % (expect, self.recipient.timezone, tz_interp, result))
+
+
+
+    def test_dailywakeup_bucket_property_no_dst_weird(self):
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst_june(self):
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst_december(self):
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst_weird_june(self):
+        self.skipTest('writeme')
+
+    def test_dailywakeup_bucket_property_dst_weird_december(self):
+        self.skipTest('writeme')
+
+
+
+class RecipientCalculateDeliveryBucketsTest(RecipientTest):
+    def setUp(self):
+        super(RecipientCalculateDeliveryBucketsTest, self).setUp()
+
+    def test_calculate_delivery_buckets(self):
+        self.skipTest('writeme')
+
+    def test_calculate_delivery_buckets_no_args(self):
+        self.skipTest('writeme')
+
+
+
+class RecipientDailyWakeupTest(RecipientTest):
+    def setUp(self):
+        super(RecipientDailyWakeupTest, self).setUp()
+
+    def test_set_dailywakeup_bucket(self):
+        self.recipient.dailywakeup_hour = 6
+        self.recipient.dailywakeup_bucket = None #redundant, but in case we change the init logic
+        self.recipient.set_dailywakeup_bucket(delete=False)
+        self.assertTrue(self.recipient.dailywakeup_bucket is not None) #@todo: once bucket logic is settled, test the actual value
+        
+    def test_set_dailywakeup_bucket_delete(self):
+        self.recipient.dailywakeup_hour = 6
+        self.recipient.dailywakeup_bucket = 12 #arbitrary
+        self.recipient.save()
+        self.recipient.set_dailywakeup_bucket(delete=True)
+        self.assertTrue(self.recipient.dailywakeup_bucket is None)
+
+
+
+class RecipientDispatchTest(RecipientTest):
+    def setUp(self):
+        super(RecipientDispatchTest, self).setUp()
+
+    def test_get_recipients_due_for_processing(self):
+        """
+        Just a simple test of the query, not the bucket logic itself.
+        """
+        Recipient.objects.all().delete() #@todo: move this into another test case that doesn't create Recipient objects by default and remove this line
+        self.recipients = []
+        for i in range(10):
+            recip = Recipient(sender=self.user,
+                              name="Recip%s" % i,
+                              email='recip%s@yahoo.com' % i,
+                              postcode='11111',
+                              timezone='America/Los_Angeles' #doesn't matter, we're overriding buckets below
+                              )
+            #these buckets make no sense, but we're testing the query and need some overlay
+            recip.dailywakeup_bucket = i / 2 
+            recip.morning_bucket = 3 + i / 2
+            recip.evening_bucket = 6 + i / 3 
+            recip.wee_hours_bucket = 9 + i / 3
+            recip.save() 
+
+        #the results of the above mess, 
+        #    D M E W
+        #    0 3 6 9
+        #    0 3 6 9
+        #    1 4 6 9
+        #    1 4 7 10
+        #    2 5 7 10
+        #    2 5 7 10
+        #    3 6 8 11
+        #    3 6 8 11
+        #    4 7 8 11
+        #    4 7 9 12
+
+        #and this is how many recipients have at least one bucket set to each value (e.g. 2 recipients have a 0 bucket            
+        expected = {0:2, 1:2, 2:2, 3:4, 4:4, 5:2, 6:5, 
+                    7:5, 8:3, 9:4, 10:3, 11:3, 12:1
+                   }
+
+        for bucket, count in expected.items():
+            due_count = Recipient.get_recipients_due_for_processing(bucket).count()
+            try:
+                self.assertEqual(due_count, count, 
+                         "Expected %s recipients in bucket %s, got %s" % (count, bucket, due_count))
+            except AssertionError, e:
+                print e
+                for recip in Recipient.objects.all():
+                    print recip.dailywakeup_bucket, recip.morning_bucket, recip.evening_bucket, recip.wee_hours_bucket
+                raise
+
+    def test_dispatch(self):
+        self.recipient.dispatch("This is the content")
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.body, "This is the content")
+        self.assertTrue(msg.from_email.startswith(self.recipient.sender.s2g_profile.s2g_email))
+        self.assertEqual(msg.to, [self.recipient.email])
+        #@todo: subject line?
+        
+
+    def test_deliver_non_daily_wakeup(self):
+        """
+        Test that a tumblr subscription item is delivered.
+        """
+        subscription = TumblrSubscription.objects.create(recipient=self.recipient,
+                                          short_name='demo',
+                                          pretty_name='demo',
+                                          last_post_ts=0, 
+                                          )
+        self.recipient.deliver(0)
+
+        subscription = TumblrSubscription.objects.get(pk=subscription.pk)
+
+        #@todo:  this assertion should actually be in TumblrSubscriptionProcessorTest.test_pull_content
+        self.assertGreater(subscription.last_post_ts, 0, "Delivering tumblr subscription didn't update its last_post_ts.")
+        
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+
+        self.assertTrue("Lorem ipsum dolor sit amet" in msg.body)
+
+        html = msg.alternatives[0][0]
+        self.assertTrue("Lorem ipsum dolor sit amet" in html)
+
+        
 class VacationTests(SubscriptionTestCase):
+    """
+    Tests of the vacation feature.
     
+    @TODO:  Refactor both these tests and the vacation form to use sanetime instead of datetime, pytz and d.u.timezone
+    """
     def test_not_on_vacation(self):
         self.assertFalse(self.recipient.is_on_vacation())
 
@@ -431,7 +760,10 @@ class VacationTests(SubscriptionTestCase):
 
     def test_is_not_on_vacation_timezone(self):
         """
-        A test of an edge case where a recipient's vacation is in a different time zone than the server.
+        Create a vacation in another timezone such that if the offset isn't accounted
+        for, it appears that the recipient is currently on vacation.
+        
+        Assert that the recipient isn't on vacation.
         """
         timezone = pytz.timezone('Europe/Amsterdam')
         self.recipient.timezone = timezone
@@ -455,8 +787,11 @@ class VacationTests(SubscriptionTestCase):
         
     def test_is_on_vacation_timezone(self):
         """
-        Like previous test, create a vacation in another timezone, but
-        make it overlap the current time in the server's timezone.
+        Create a vacation in another timezone such that if the offset
+        isn't accounted for, the vacation appears to be 6 hours in the future 
+        (and therefore not yet started).
+        
+        Assert that is has started.
         """
         timezone = pytz.timezone('Europe/Amsterdam') # 8-9 hours ahead
         self.recipient.timezone = timezone
@@ -472,51 +807,81 @@ class VacationTests(SubscriptionTestCase):
                                 end_date=end
                                 )
         self.assertTrue(self.recipient.is_on_vacation())
-                                
+                                        
+    def test_get_vacationing_recipients(self):
+        """
+        Tests getting the set of recipients currently on vacation.
+        """
+        #start with a clean slate
+        Recipient.objects.all().delete()
+        now = time(tz='UTC')
+        last_week = now - delta(hours=7*24)
+        next_week = now + delta(hours=7*24)
+        
+        for i in range(10):
+            recipient = Recipient.objects.create(sender=self.user,
+                                     name='Nonna_%s' % i,
+                                     email='elsa_%s@yahoo.com' % i,
+                                     postcode='02540',
+                                     timezone='America/New_York')
+                    
+            if i < 4: #create vacations for the first four
+                Vacation.objects.create(recipient=recipient,
+                                        start_date=last_week.datetime,
+                                        end_date=next_week.datetime)
+        
+        self.assertEqual(Recipient.get_vacationing_recipients().count(), 4)
+        self.assertEqual(Recipient.objects.exclude(pk__in=Recipient.get_vacationing_recipients()).count(), 6)
+                
 
     def test_stupid_vacation(self):
         """
         Ensure that creating a vacation without timezone info results
         in using the recipient's timezone.
         """
-        timezone = pytz.timezone('America/New_York')
+        timezone = 'America/New_York'
         self.recipient.timezone = timezone
         self.recipient.save()
-        
-        start = datetime(year=2012, month=12, day=12, hour=12)
-        end = datetime(year=2012, month=12, day=14, hour=12)
-        
+
+        start = time(2012, 12, 12, 12, 0, 0, tz=timezone)
+        end = time(2012, 12, 14, 12, 0, 0, tz=timezone)
+
         vacation = Vacation.objects.create(recipient=self.recipient,
-                                           start_date=start,
-                                           end_date=end)
-        
-        self.assertEqual(vacation.start_date.tzinfo, timezone)
-        self.assertEqual(vacation.end_date.tzinfo, timezone)
-        
+                                           start_date=start.datetime,
+                                           end_date=end.datetime)
+
+        vaca_tz_name = str(vacation.start_date.tzinfo.tzname)
+        self.assertTrue(timezone in vaca_tz_name,
+                        "vacation.start_date: %s was interpreted as %s" % (timezone, vaca_tz_name))
+
+        vaca_tz_name = str(vacation.end_date.tzinfo.tzname)
+        self.assertTrue(timezone in vaca_tz_name,
+                        "vacation.end_date: %s was interpreted as %s" % (timezone, vaca_tz_name))
+
     def test_bad_vacation_form(self):
         """
         Submitting a vacation form where the start date is after the end date is an error.
         """
-        start = dutz.now().today()
-        end = start - timedelta(days=1)
+        start = time(tz='UTC')
+        end = start - delta(hours=1*24)
         data = {'start_date': start.strftime('%Y-%m-%d'),
                 'end_date': end.strftime('%Y-%m-%d')}
         form = VacationForm(data)
         self.assertFalse(form.is_valid())
-        
+
     def test_delete_future_vacation(self):
         """
         Cancelling a future vacation that has not yet started is fine,
         just delete it.
         """
         self.client.login(**self.userdata)
-        start = dutz.now() + timedelta(days=1)
-        end = start + timedelta(weeks=1)
+        start = time(tz='UTC') + delta(hours=1*24)
+        end = start + delta(hours=1*24*7)
+
         vacation = Vacation.objects.create(recipient=self.recipient,
-                                           start_date=start,
-                                           end_date=end
-                                           )
-        
+                                           start_date=start.datetime,
+                                           end_date=end.datetime)
+
         url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
         self.client.post(url)
         
@@ -528,17 +893,16 @@ class VacationTests(SubscriptionTestCase):
         the end date to now, not actually deleting it.
         """
         self.client.login(**self.userdata)
-        start = dutz.now() - timedelta(days=2) #started yesterday
-        end = start + timedelta(days=7)
+        start = time(tz='UTC') - delta(hours=2*24) #started yesterday
+        end = start + delta(hours=7*24)
         vacation = Vacation.objects.create(recipient=self.recipient,
-                                           start_date=start,
-                                           end_date=end
-                                           )
+                                           start_date=start.datetime,
+                                           end_date=end.datetime)
         
         url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
         self.client.post(url)
         vacation = Vacation.objects.get(pk=vacation.pk) #reload
-        self.assertTrue(vacation.end_date <= dutz.now())
+        self.assertTrue(vacation.end_date <= time(tz='UTC').datetime)
 
     def test_delete_somebody_elses_vacation(self):
         """
@@ -547,13 +911,16 @@ class VacationTests(SubscriptionTestCase):
         new_user = User.objects.create_user("new_user", password='new_pass')
         new_recipient = Recipient.objects.create(sender=new_user,
                                                   name='Nanna',
-                                                  email='elsie@yahoo.com')
+                                                  email='elsie@yahoo.com',
+                                                  timezone='Europe/Copenhagen')
 
         #this vacation starts and ends in the future, so it can be deleted and not just trigger
         #the end_date change.
+        start_date = time(tz='UTC') + delta(hours=1 * 24)
+        end_date = time(tz='UTC') + delta(hours=4 * 24 * 7)
         vacation = Vacation.objects.create(recipient=new_recipient,
-                                           start_date=dutz.now() + timedelta(days=1),
-                                           end_date=dutz.now() + timedelta(weeks=4))
+                                           start_date=start_date.datetime,
+                                           end_date=end_date.datetime)
         url = reverse('vacation_cancel', kwargs={'pk':vacation.pk})
         
         self.client.login(**self.userdata) #login as self.user, NOT new_user
@@ -566,13 +933,14 @@ class VacationTests(SubscriptionTestCase):
         new_user = User.objects.create_user("new_user", password='new_pass')
         new_recipient = Recipient.objects.create(sender=new_user,
                                                   name='Nanna',
-                                                  email='elsie@yahoo.com')
+                                                  email='elsie@yahoo.com',
+                                                  timezone='Asia/Tokyo')
 
         self.client.login(**self.userdata)
         url = reverse('vacation_create', kwargs={'recipient_id': new_recipient.pk})
         
-        start = dutz.now().today()
-        end = start - timedelta(days=1)
+        start = time(tz='UTC')
+        end = start - delta(hours=1*24)
         data = {'start_date': start.strftime('%Y-%m-%d'),
                 'end_date': end.strftime('%Y-%m-%d')}
         

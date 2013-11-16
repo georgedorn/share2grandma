@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.core.urlresolvers import reverse_lazy, reverse
 from django.contrib.auth.models import User
 from subscriptions.models import Recipient, TumblrSubscription, Vacation
-from datetime import datetime, timedelta
+from sanetime import time, delta
 
 class ViewsTests(TestCase):
     
@@ -23,16 +23,19 @@ class ViewsTests(TestCase):
                                                   sender_name='bob',
                                                   sender_phone='000-000-0000',
                                                   name='granny',
-                                                  email='bob@yruncle.com'
+                                                  email='bob@yruncle.com',
+                                                  timezone='America/Los_Angeles'
                                                 )
         self.subscription = TumblrSubscription.objects.create(recipient=self.recipient,
                                                               short_name='bobs_monkeys',
                                                               pretty_name="Bob's Monkey Photos",
                                                               avatar='monkey.jpg') #supplying all fields to avoid call to tumblr
-        
+
+        start_dt = time() - delta(hours=1 * 7 * 24)
+        end_dt = time() + delta(hours=1 * 7 * 24)
         self.vacation = Vacation.objects.create(recipient=self.recipient,
-                                                start_date=datetime.now() - timedelta(weeks=1),
-                                                end_date=datetime.now() + timedelta(weeks=1)
+                                                start_date=start_dt.datetime,
+                                                end_date=end_dt.datetime
                                                 )
 
         #urls of things that require you to be logged in to access        

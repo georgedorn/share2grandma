@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from django.views.generic import ListView, CreateView, DetailView, DeleteView
-from django.http.response import HttpResponseRedirect
+from django.http.response import HttpResponseRedirect, Http404
 from django.core.urlresolvers import reverse_lazy
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -33,8 +33,6 @@ class SubscriptionDetailView(LoginRequiredMixin, DetailView):
 
 class GenericSubscriptionListView(LoginRequiredMixin, ListView):
     queryset = GenericSubscription.objects.all()
-#    queryset = Book.objects.filter(publisher__name="Acme Publishing")
-#    template_name = "books/acme_list.html"
 
 
 class SubscriptionDeleteView(LoginRequiredMixin, DeleteView):

@@ -12,12 +12,10 @@ ADMINS = (('Devs', 'devs@share2grandma.com'),)
 ALLOWED_HOSTS = [
                 'app.share2grandma.com',
                 'taffy.utopiadammit.com' #remove me when this is fixed
-
 ]
 
-#todo:  figure this out
-#EMAIL_HOST = "localhost"
-#EMAIL_PORT = 1025
+EMAIL_HOST = "localhost"
+EMAIL_PORT = 25
 
 DB_USER = 's2g'
 
@@ -40,3 +38,5 @@ TUMBLR_API_KEY = TUMBLR_CONSUMER_KEY
 TUMBLR_CONSUMER_SECRET = os.environ['TUMBLR_CONSUMER_SECRET']
 GOOGLE_OAUTH2_CLIENT_ID = os.environ['GOOGLE_OAUTH2_CLIENT_ID']
 GOOGLE_OAUTH2_CLIENT_SECRET = os.environ['GOOGLE_OAUTH2_CLIENT_SECRET']
+
+

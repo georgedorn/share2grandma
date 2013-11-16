@@ -1,0 +1,20 @@
+{% load i18n %}
+{% blocktrans with name=recipient.name today=today|date:"DATE_FORMAT" %}
+<p><big>Hello, {{ name }}!  This is your Share2Grandma Daily Wakeup Call.</big></p>
+
+<p><big>Today is {{ today }}.</big></p>
+{% endblocktrans %}
+{% blocktrans %}
+<p>Today's local weather forecast for Plainsville, Massachusetts, USA, says that it
+will be partly sunny outside.  The high will be around 42&deg;F, with a low tonight
+of about 36&deg;F.  The chance of rain is 20% today, and 40% tonight.</p>
+{% endblocktrans %}
+
+<!-- example follows - plugins responsible for own i18n/l10n -->
+<h3>Plugin 1 header text</h3>
+
+<ul>
+<li>item 1</li>
+<li>item 2</li>
+<li>max of 3 items per plugin</li>
+</ul>

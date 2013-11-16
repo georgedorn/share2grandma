@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.translation import ugettext as _
 from django.contrib.admin.widgets import AdminDateWidget
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -12,9 +13,13 @@ class TumblrSubscriptionForm(forms.ModelForm):
 
 
 class RecipientForm(forms.ModelForm):
+    """
+    Form for creating new Recipients or editing existing ones.
+    """
+
     class Meta:
         model = Recipient
-        fields = ('sender', 'sender_name', 'sender_phone', 'name', 'email', 'timezone')
+        fields = ('sender', 'sender_name', 'sender_phone', 'name', 'email', 'timezone', 'dailywakeup_hour')
 
 class VacationForm(forms.ModelForm):
     start_date = forms.DateTimeField(widget=AdminDateWidget())
