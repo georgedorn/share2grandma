@@ -85,10 +85,5 @@ class ViewsTests(TestCase):
         
         for url in self.ownership_required_urls:
             res = self.client.get(url)
-            if res.status_code != 404:
-                print "Bug warning:  URL %s should return a 404 when interacting with somebody else's object.  But it returned a %s" % (url, res.status_code)
-                
-            #@todo:  These should all 404, but most do not.
-            #Change this to an assertion instead of a warning after than code is implemented.
-        
-        
+            self.assertEqual(res.status_code, 404, 
+                             "URL %s should return a 404 when interacting with somebody else's object.  But it returned a %s" % (url, res.status_code))

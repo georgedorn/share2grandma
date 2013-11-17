@@ -11,6 +11,10 @@ class TumblrSubscriptionForm(forms.ModelForm):
         model = TumblrSubscription
         fields = ('recipient', 'enabled', 'short_name')     # whitelist
 
+    def __init__(self, user, *args, **kwargs):
+        super(TumblrSubscriptionForm, self).__init__(*args, **kwargs)
+        self.fields['recipient'].queryset = Recipient.objects.filter(sender=user)
+
 
 class RecipientForm(forms.ModelForm):
     """
@@ -19,7 +23,8 @@ class RecipientForm(forms.ModelForm):
 
     class Meta:
         model = Recipient
-        fields = ('sender', 'sender_name', 'sender_phone', 'name', 'email', 'timezone', 'dailywakeup_hour')
+        fields = ('sender_name', 'sender_phone', 'name', 'email', 'timezone', 'dailywakeup_hour')
+
 
 class VacationForm(forms.ModelForm):
     start_date = forms.DateTimeField(widget=AdminDateWidget())
