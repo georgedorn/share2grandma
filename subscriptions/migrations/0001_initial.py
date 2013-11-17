@@ -31,7 +31,14 @@ class Migration(SchemaMigration):
             ('name', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('add_date', self.gf('django.db.models.fields.DateField')(auto_now_add=True, blank=True)),
             ('email', self.gf('django.db.models.fields.EmailField')(max_length=75)),
-            ('timezone', self.gf('timezone_field.fields.TimeZoneField')(default='America/Los_Angeles')),
+            ('timezone', self.gf('timezone_field.fields.TimeZoneField')()),
+            ('language', self.gf('django.db.models.fields.CharField')(default='en-us', max_length=12)),
+            ('temperature', self.gf('django.db.models.fields.CharField')(default='F', max_length=1)),
+            ('dailywakeup_hour', self.gf('django.db.models.fields.IntegerField')(default=None, null=True, blank=True)),
+            ('dailywakeup_bucket', self.gf('django.db.models.fields.IntegerField')(null=True)),
+            ('morning_bucket', self.gf('django.db.models.fields.IntegerField')(null=True)),
+            ('evening_bucket', self.gf('django.db.models.fields.IntegerField')(null=True)),
+            ('wee_hours_bucket', self.gf('django.db.models.fields.IntegerField')(null=True)),
             ('postcode', self.gf('django.db.models.fields.CharField')(max_length=16, null=True, blank=True)),
         ))
         db.send_create_signal(u'subscriptions', ['Recipient'])
@@ -49,6 +56,17 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'subscriptions', ['DailyWakeupSubscription'])
 
+        # Adding model 'DailyWakeupContent'
+        db.create_table(u'subscriptions_dailywakeupcontent', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('expires', self.gf('django.db.models.fields.DateTimeField')()),
+            ('daily_wakeup_subscription', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['subscriptions.DailyWakeupSubscription'])),
+            ('content', self.gf('django.db.models.fields.CharField')(max_length=160)),
+            ('subscription_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['contenttypes.ContentType'])),
+            ('subscription_id', self.gf('django.db.models.fields.PositiveIntegerField')()),
+        ))
+        db.send_create_signal(u'subscriptions', ['DailyWakeupContent'])
+
         # Adding model 'Vacation'
         db.create_table(u'subscriptions_vacation', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -57,14 +75,6 @@ class Migration(SchemaMigration):
             ('end_date', self.gf('django.db.models.fields.DateTimeField')()),
         ))
         db.send_create_signal(u'subscriptions', ['Vacation'])
-
-        # Adding model 'Profile'
-        db.create_table(u'subscriptions_profile', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('user', self.gf('django.db.models.fields.related.OneToOneField')(related_name='s2g_profile', unique=True, to=orm['auth.User'])),
-            ('s2g_email', self.gf('django.db.models.fields.EmailField')(max_length=75, null=True)),
-        ))
-        db.send_create_signal(u'subscriptions', ['Profile'])
 
 
     def backwards(self, orm):
@@ -80,11 +90,11 @@ class Migration(SchemaMigration):
         # Deleting model 'DailyWakeupSubscription'
         db.delete_table(u'subscriptions_dailywakeupsubscription')
 
+        # Deleting model 'DailyWakeupContent'
+        db.delete_table(u'subscriptions_dailywakeupcontent')
+
         # Deleting model 'Vacation'
         db.delete_table(u'subscriptions_vacation')
-
-        # Deleting model 'Profile'
-        db.delete_table(u'subscriptions_profile')
 
 
     models = {
@@ -124,6 +134,15 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
+        u'subscriptions.dailywakeupcontent': {
+            'Meta': {'object_name': 'DailyWakeupContent'},
+            'content': ('django.db.models.fields.CharField', [], {'max_length': '160'}),
+            'daily_wakeup_subscription': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['subscriptions.DailyWakeupSubscription']"}),
+            'expires': ('django.db.models.fields.DateTimeField', [], {}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'subscription_id': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'subscription_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['contenttypes.ContentType']"})
+        },
         u'subscriptions.dailywakeupsubscription': {
             'Meta': {'object_name': 'DailyWakeupSubscription', '_ormbases': [u'subscriptions.GenericSubscription']},
             u'genericsubscription_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['subscriptions.GenericSubscription']", 'unique': 'True', 'primary_key': 'True'})
@@ -140,23 +159,24 @@ class Migration(SchemaMigration):
             'recipient': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'subscriptions'", 'to': u"orm['subscriptions.Recipient']"}),
             'short_name': ('django.db.models.fields.CharField', [], {'max_length': '16'})
         },
-        u'subscriptions.profile': {
-            'Meta': {'object_name': 'Profile'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            's2g_email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True'}),
-            'user': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'s2g_profile'", 'unique': 'True', 'to': u"orm['auth.User']"})
-        },
         u'subscriptions.recipient': {
             'Meta': {'object_name': 'Recipient'},
             'add_date': ('django.db.models.fields.DateField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'dailywakeup_bucket': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'dailywakeup_hour': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
+            'evening_bucket': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'language': ('django.db.models.fields.CharField', [], {'default': "'en-us'", 'max_length': '12'}),
+            'morning_bucket': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'postcode': ('django.db.models.fields.CharField', [], {'max_length': '16', 'null': 'True', 'blank': 'True'}),
             'sender': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'recipients'", 'to': u"orm['auth.User']"}),
             'sender_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'sender_phone': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
-            'timezone': ('timezone_field.fields.TimeZoneField', [], {'default': "'America/Los_Angeles'"})
+            'temperature': ('django.db.models.fields.CharField', [], {'default': "'F'", 'max_length': '1'}),
+            'timezone': ('timezone_field.fields.TimeZoneField', [], {}),
+            'wee_hours_bucket': ('django.db.models.fields.IntegerField', [], {'null': 'True'})
         },
         u'subscriptions.tumblrsubscription': {
             'Meta': {'object_name': 'TumblrSubscription', '_ormbases': [u'subscriptions.GenericSubscription']},

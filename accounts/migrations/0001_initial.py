@@ -3,62 +3,25 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-from django.db.utils import DatabaseError
-import sys, os
-devnull = open(os.devnull, 'w')
 
-class RedirectStdStreams(object):
-    """
-    Context manager to send stderr/stdout somewhere else (e.g. devnull) for the duration of the context.
-    
-    Used to silence south printing error messages even if DatabaseError is caught.
-    """
-    def __init__(self, stdout=None, stderr=None):
-        self._stdout = stdout or sys.stdout
-        self._stderr = stderr or sys.stderr
-
-    def __enter__(self):
-        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-        self.old_stdout.flush(); self.old_stderr.flush()
-        sys.stdout, sys.stderr = self._stdout, self._stderr
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._stdout.flush(); self._stderr.flush()
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Moving Profile from subscriptions to accounts. 
-        # Or, if it doesn't exist due to order of events, just create it.
-        try:
-            with RedirectStdStreams(stdout=devnull, stderr=devnull): #next command prints to stderr without this context manager.
-                db.rename_table('subscriptions_profile', 'accounts_profile')                                                                                                                        
-        except DatabaseError:
-            # Adding model 'Profile'
-            db.create_table(u'accounts_profile', (
-                (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-                ('user', self.gf('django.db.models.fields.related.OneToOneField')(related_name='s2g_profile', unique=True, to=orm['auth.User'])),
-                ('s2g_email', self.gf('django.db.models.fields.EmailField')(max_length=75, null=True)),
-            ))
-        db.send_create_signal('accounts', ['Profile'])
+        # Adding model 'Profile'
+        db.create_table(u'accounts_profile', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('user', self.gf('django.db.models.fields.related.OneToOneField')(related_name='s2g_profile', unique=True, to=orm['auth.User'])),
+            ('s2g_email', self.gf('django.db.models.fields.EmailField')(max_length=75, null=True)),
+        ))
+        db.send_create_signal(u'accounts', ['Profile'])
+
 
     def backwards(self, orm):
-        # Moving Profile from accounts to subscriptions    
-        try:
-            with RedirectStdStream(stdout=devnull, stderr=devnull): #next command prints to stderr without this context manager.
-                db.rename_table('accounts_profile', 'subscriptions_profile')                                                                                                                        
-        except DatabaseError:
-            db.create_table(u'subscriptions_profile', (
-                (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-                ('user', self.gf('django.db.models.fields.related.OneToOneField')(related_name='s2g_profile', unique=True, to=orm['auth.User'])),
-                ('s2g_email', self.gf('django.db.models.fields.EmailField')(max_length=75, null=True)),
-            ))
-        db.send_create_signal('subscriptions', ['Profile'])
-        
-        
-        
+        # Deleting model 'Profile'
+        db.delete_table(u'accounts_profile')
+
+
     models = {
         u'accounts.profile': {
             'Meta': {'object_name': 'Profile'},
