@@ -15,16 +15,24 @@ TEMPLATE_DEBUG = DEBUG
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025
 
-DATABASES = {
-             "default": {
-                         "ENGINE": "django.db.backends.sqlite3",
-                         "NAME": "share2grandma.db",
-                         "USER": "",
-                         "PASSWORD": "",
-                         "HOST": "localhost",
-                         "PORT": "",
-                         }
-             }
+DB_TYPE = os.getenv('DB')
+
+
+if DB_TYPE == 'sqlite':
+    DATABASES = {
+                 "default": {
+                             "ENGINE": "django.db.backends.sqlite3",
+                             "NAME": "share2grandma.db",
+                             }
+                 }
+elif DB_TYPE == 'postgres':
+    DATABASES = {
+                 "default": {
+                             "ENGINE": "django.db.backends.postgresql_psycopg2",
+                             "NAME": "s2g",
+                             "USER": "postgres"
+                             }
+                 }
 
 TUMBLR_CONSUMER_KEY = 'PsbqraXHdjAOpHf31vJ7fa4UIyUTeRwVlX3AxUOmtwqHQWZgbh'
 TUMBLR_CONSUMER_SECRET = 'C1P3TznBoZsNtrfAxnQSoWLDSq0J6Msnk468OJfTMF90XOipbO'
