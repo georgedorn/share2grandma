@@ -25,7 +25,7 @@ if DB_TYPE == 'sqlite':
                              "NAME": "share2grandma.db",
                              }
                  }
-elif DB_TYPE == 'postgres':
+elif DB_TYPE == 'postgresql':
     DATABASES = {
                  "default": {
                              "ENGINE": "django.db.backends.postgresql_psycopg2",
