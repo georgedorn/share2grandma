@@ -57,6 +57,12 @@ You can add more service connections by <a href="{% url "auth_login" %}">{% tran
                 {% blocktrans with name=recipient.name date=recipient.add_date %}
                     {{ name }}</a>, added on {{ date }}
                 {% endblocktrans %}
+            <a href="{% url 'recipient_update' recipient.pk %}">
+                {% trans "Edit" %}
+            </a>
+            <a href="{% url 'recipient_delete' recipient.pk %}">
+                {% trans "Delete" %}
+            </a>
         </li>
             <ul>
                 <li>{% blocktrans with name=recipient.sender_name phone=recipient.sender_phone %}

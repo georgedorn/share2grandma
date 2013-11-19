@@ -288,7 +288,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
 
     def test_subscription_detail_view_somebody_elses_subscription(self):
         """
-        Trying to look at somebody else's subscription should 404
+        Trying to look at somebody else's subscription should 403
         """
         user2 = User.objects.create(username='somebody_else')
         recip2 = Recipient.objects.create(sender=user2, timezone='America/Chicago')
@@ -298,7 +298,7 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         
         url = reverse('subscription_detail_tumblr', kwargs={'pk':subscription.pk})
         res = self.client.get(url)
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
 
 
     def test_delete_somebody_elses_tumblr_subscription(self):
@@ -309,10 +309,10 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.client.login(**self.userdata)
         url = reverse('subscription_delete_tumblr', kwargs={'pk':subscription.pk})
         res = self.client.get(url)
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
         
         res = self.client.post(url)
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 403)
 
 
     def test_create_tumblr_subscription_nonexistent_recipient(self):
@@ -509,29 +509,34 @@ class RecipientViewsTest(RecipientTest):
         
         self.assertTrue(obj in Recipient.get_recipients_due_for_processing(bucket=dailywakeup_bucket))
 
-
-    def test_delete(self):
-        """
-        Delete a Recipient object directly
-        # @todo use this to test that recipient subscriptions and so on all go with?
-        """
-        self.assertTrue(self.user.recipients.count() == 1)
-        self.recipient.delete()
-        self.assertTrue(self.user.recipients.count() == 0)
-
-
     def test_delete_via_ui(self):
         """
         Delete a Recipient via the UI
         """
-        # not yet implemented, different story
-        self.skipTest('writeme')
+        self.client.login(**self.userdata)
 
+        url = reverse('recipient_delete', kwargs={'pk':self.recipient.pk})
+        self.client.get(url)
+        self.assertEqual(Recipient.objects.count(), 1) #GET doesn't delete
+        self.client.post(url)
+        self.assertEqual(Recipient.objects.count(), 0) #POST deletes
 
     def test_delete_somebody_elses_recipient(self):
-        self.skipTest('writeme')
-
-
+        """
+        Try to delete somebody else's recipient.
+        """
+        user2 = User.objects.create(username='somebody_else')
+        recip2 = Recipient.objects.create(sender=user2, timezone='UTC')
+        
+        self.client.login(**self.userdata)
+        url = reverse('recipient_delete', kwargs={'pk':recip2.pk})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 403)
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, 403)
+        
+        self.assertEqual(Recipient.objects.filter(sender=user2).count(), 1)
+        
     def test_create_somebody_elses_recipient(self):
         """
         This test tries to submit a form to create a recipient
@@ -585,7 +590,7 @@ class RecipientViewsTest(RecipientTest):
 
     def test_detail_view_somebody_elses_recipient(self):
         """
-        Trying to access a recipient belonging to another user should 404.
+        Trying to access a recipient belonging to another user should 403.
         """
         self.client.login(**self.userdata)
         user2 = User.objects.create(username='somebody_else')
@@ -593,7 +598,7 @@ class RecipientViewsTest(RecipientTest):
         
         res = self.client.get(reverse('recipient_detail', kwargs={'pk':recip2.pk}), follow=True)
         
-        self.assertEqual(res.status_code, 404, "Should get a 404 trying to view somebody else's grandma.")
+        self.assertEqual(res.status_code, 403, "Should get a 403 trying to view somebody else's grandma.")
 
 
     def test_dashboard_recipient_display(self):
@@ -1050,7 +1055,7 @@ class VacationTests(SubscriptionTestCase):
                 'end_date': end.strftime('%Y-%m-%d')}
         
         res = self.client.post(url, data)
-        self.assertEqual(res.status_code, 404) #can't do that
+        self.assertEqual(res.status_code, 403) #can't do that
         
         
 

@@ -3,7 +3,8 @@
 
 {% block content %}
     <h1>{% trans "Recipient Details" noop %}</h1>
-    {# <a href="{% url "recipient_delete" pk=object.pk %}">Delete</a> #}
+    <a href="{% url "recipient_update" pk=object.pk %}">{% trans "Edit" %}</a>
+    <a href="{% url "recipient_delete" pk=object.pk %}">{% trans "Delete" %}</a>
     <dl>
         <dt class="top"><br>{% trans "Sender" noop %}</dt>
         <dd>{{ object.user }}</dd>
@@ -24,4 +25,6 @@
         <dt>{% trans "On vacation?" noop %}</dt>
         <dd>{{ object.is_on_vaation }}</dd>
     </dl>
+    
+
 {% endblock %}
