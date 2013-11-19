@@ -94,8 +94,8 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
         if not hasattr(self, '_recipient'):
             recipient_id = self.kwargs['recipient_id']
             user = self.request.user
-            obj = Recipient.objects.get(pk=recipient_id)
-            if obj.sender != user:
+            self._recipient = Recipient.objects.get(pk=recipient_id)
+            if self._recipient.sender != user:
                 raise PermissionDenied
         return self._recipient
     
