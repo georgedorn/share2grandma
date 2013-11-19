@@ -270,24 +270,96 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.assertEqual(len(TumblrSubscription.objects.all()), num_subscriptions - 1)
 
     def test_subscription_detail_view(self):
-        # does this exist somewhere else?
-        self.skipTest('writeme')
+        """
+        Looking at a subscription detail page should show you the subscription
+        if you have permission.
+        """
+        subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
+        subscription.save()
+        
+        self.client.login(**self.userdata)
+        url = reverse('subscription_detail_tumblr', kwargs={'pk':subscription.pk})
+        res = self.client.get(url)
+
+        self.assertTrue(subscription.avatar in res.content)
+        self.assertTrue(subscription.pretty_name in res.content)
+        self.assertTrue(subscription.short_name in res.content)
+
 
     def test_subscription_detail_view_somebody_elses_subscription(self):
-        self.skipTest('writeme')
+        """
+        Trying to look at somebody else's subscription should 404
+        """
+        user2 = User.objects.create(username='somebody_else')
+        recip2 = Recipient.objects.create(sender=user2, timezone='America/Chicago')
+        subscription = TumblrSubscription.objects.create(short_name='demo', recipient=recip2)
+
+        self.client.login(**self.userdata)
+        
+        url = reverse('subscription_detail_tumblr', kwargs={'pk':subscription.pk})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 404)
+
 
     def test_delete_somebody_elses_tumblr_subscription(self):
-        self.skipTest('writeme')
+        user2 = User.objects.create(username='somebody_else')
+        recip2 = Recipient.objects.create(sender=user2, timezone='America/Chicago')
+        subscription = TumblrSubscription.objects.create(short_name='demo', recipient=recip2)
 
-    def test_create_somebody_elses_tumblr_subscription(self):
-        self.skipTest('writeme')
+        self.client.login(**self.userdata)
+        url = reverse('subscription_delete_tumblr', kwargs={'pk':subscription.pk})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 404)
+        
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, 404)
+
 
     def test_create_tumblr_subscription_nonexistent_recipient(self):
-        self.skipTest('writeme')
+        """
+        Submit the tumblr subscription page without a recipient?
+        """
+
+        self.client.login(**self.userdata)
+        res = self.client.post(self.url_subscription_create_tumblr, 
+                               {'short_name':'no_recipient_tumblr',
+                                'enabled':True},
+                               follow=True)
+        
+        form = res.context[0]['form']
+        self.assertFalse(form.is_valid())
+        
+        #and not in the db
+        objs = TumblrSubscription.objects.filter(short_name='no_recipient_tumblr')
+        self.assertEqual(objs.count(), 0)
+
 
     def test_create_tumblr_subscription_somebody_elses_recipient(self):
-        self.skipTest('writeme')
+        """
+        Show that you can't sign somebody else's grandma up for a porn tumblog..
+        """
+        user2 = User.objects.create(username='somebody_else')
+        recip2 = Recipient.objects.create(sender=user2, timezone='America/Los_Angeles')
+        
+        self.client.login(**self.userdata)
 
+        res = self.client.post(self.url_subscription_create_tumblr,
+            {'recipient':recip2,
+             'short_name':'really_bad_tumblr',
+             'enabled':True},
+            follow=True)
+        
+        #the form should say something like "Recipient is not a valid choice."
+        #we don't actually care what the message is, we just want to be sure there was an error
+        form = res.context[0]['form']
+        self.assertFalse(form.is_valid())
+        self.assertTrue('recipient' in form.errors)
+
+        #and no objects were created
+        objs = TumblrSubscription.objects.filter(short_name='really_bad_tumblr', recipient=recip2)
+        self.assertEqual(objs.count(), 0)
+
+        
     def test_login_required(self):
         subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
         subscription.save()
@@ -376,8 +448,7 @@ class RecipientViewsTest(RecipientTest):
         self.client.login(**self.userdata)
 
         granny_data = \
-            {'sender':self.user.pk, #@todo: Sender is not posted, should be in request
-             'sender_name':'bobby',
+            {'sender_name':'bobby',
              'sender_phone':'111-222-3344',
              'name':'Granny Em',
              'email':'emgran@aol.com',
@@ -400,7 +471,8 @@ class RecipientViewsTest(RecipientTest):
                     break
         self.assertTrue(success)
 
-        granny_data.pop('sender')     # not looking for pk in output
+        self.assertEqual(obj.sender, self.user)
+
         self.assertTrue(self.user.username in res.rendered_content)
 
         for s in granny_data.values():
@@ -414,8 +486,7 @@ class RecipientViewsTest(RecipientTest):
         """
         self.client.login(**self.userdata)
 
-        granny_data = \
-            {'sender':self.user.pk, #@todo: Sender is not posted, should be in request
+        granny_data = {
              'sender_name':'bobby',
              'sender_phone':'111-222-3344',
              'name':'Granny Em',
@@ -433,6 +504,8 @@ class RecipientViewsTest(RecipientTest):
         obj = Recipient.objects.get(name='Granny Em')
         dailywakeup_bucket = obj.dailywakeup_bucket
         self.assertTrue(dailywakeup_bucket is not None)
+
+        self.assertEqual(self.user, obj.sender)
         
         self.assertTrue(obj in Recipient.get_recipients_due_for_processing(bucket=dailywakeup_bucket))
 
@@ -460,12 +533,35 @@ class RecipientViewsTest(RecipientTest):
 
 
     def test_create_somebody_elses_recipient(self):
-        self.skipTest('writeme')
+        """
+        This test tries to submit a form to create a recipient
+        belonging to a user other than the logged-in user, which should not be possible.
+        """
+        
+        user2 = User.objects.create(username='otheruser') #somebody else
+        
+        self.client.login(**self.userdata)
+        
+        granny_data = {
+             'sender':user2.pk,
+             'sender_name':'victim',
+             'sender_phone':'111-222-3344',
+             'name':'Poor Granny',
+             'email':'emgran@aol.com',
+             'timezone':'America/Indiana/Knox',
+             }
+        
+        res = self.client.post(self.url_recipient_create,
+            granny_data,
+            follow=True)
+        
+        self.assertEqual(Recipient.objects.count(), 2)  # includes fixture
 
+        obj = Recipient.objects.get(name='Poor Granny')
 
-    def test_create_recipient_nonexistent_user(self):
-        self.skipTest('writeme')
-
+        self.assertEqual(self.user, obj.sender) # despite sending the other user's PK, logged-in user is sender
+        self.assertNotEqual(user2, obj.sender)  # and somebody else is definitely not the sender
+        
 
     def test_detail_view(self):
         """
@@ -488,7 +584,16 @@ class RecipientViewsTest(RecipientTest):
                             "Expected value '%s' for field '%s' in rendered content %s" % (v, field, res.content))
 
     def test_detail_view_somebody_elses_recipient(self):
-        self.skipTest('writeme')
+        """
+        Trying to access a recipient belonging to another user should 404.
+        """
+        self.client.login(**self.userdata)
+        user2 = User.objects.create(username='somebody_else')
+        recip2 = Recipient.objects.create(sender=user2, timezone='America/Los_Angeles')
+        
+        res = self.client.get(reverse('recipient_detail', kwargs={'pk':recip2.pk}), follow=True)
+        
+        self.assertEqual(res.status_code, 404, "Should get a 404 trying to view somebody else's grandma.")
 
 
     def test_dashboard_recipient_display(self):

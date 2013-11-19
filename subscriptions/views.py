@@ -16,28 +16,51 @@ from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
 class TumblrSubscriptionCreateView(LoginRequiredMixin, CreateView):
     model = TumblrSubscription
     form_class = TumblrSubscriptionForm
+    
+    def get_form_kwargs(self):
+        kwargs = super(TumblrSubscriptionCreateView, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
 class RecipientCreateView(LoginRequiredMixin, CreateView):
     model = Recipient
     form_class = RecipientForm
+    
+    def form_valid(self, form):
+        form.instance.sender = self.request.user
+        return super(RecipientCreateView, self).form_valid(form)
 
 
 class RecipientDetailView(LoginRequiredMixin, DetailView):
     model = Recipient
 
+    def get_object(self, queryset=None):
+        obj = get_object_or_404(Recipient, pk=self.kwargs.get('pk'), sender=self.request.user)
+        return DetailView.get_object(self, queryset=queryset)
+
 
 class SubscriptionDetailView(LoginRequiredMixin, DetailView):
     model = TumblrSubscription
+
+    def get_object(self, queryset=None):
+        obj = get_object_or_404(TumblrSubscription, pk=self.kwargs.get('pk'), recipient__in=Recipient.objects.filter(sender=self.request.user))
+        return DetailView.get_object(self, queryset=queryset)
 
 
 class GenericSubscriptionListView(LoginRequiredMixin, ListView):
     queryset = GenericSubscription.objects.all()
 
+    def get_queryset(self):
+        return GenericSubscription.objects.filter(recipient__in=Recipient.objects.filter(sender=self.request.user))
 
 class SubscriptionDeleteView(LoginRequiredMixin, DeleteView):
     model = TumblrSubscription
     success_url = reverse_lazy('subscription_list')
+
+    def get_object(self, queryset=None):
+        obj = get_object_or_404(TumblrSubscription, pk=self.kwargs.get('pk'), recipient__in=Recipient.objects.filter(sender=self.request.user))
+        return DeleteView.get_object(self, queryset=queryset)
 
 class VacationCreateView(LoginRequiredMixin, CreateView):
     model = Vacation
