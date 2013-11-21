@@ -2,6 +2,7 @@ from random import randrange
 import re
 
 from mock import Mock
+import random
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -22,7 +23,7 @@ import pytz
 from subscriptions.forms import VacationForm
 from django.template.context import Context
 from django.template.base import Template
-from subscriptions.models import GenericSubscription
+from subscriptions.models import GenericSubscription, TumblrNotFound
 
 
 
@@ -68,15 +69,12 @@ class TumblrSubscriptionProcessorTest(TestCase):
         
 
     def test_instantiate_badblog(self):
-        caught = False
-        try:
-            my_subscription = TumblrSubscription(recipient=self.recipient,
-                                                 short_name='zmxmdmcnnjjncn')
-            my_subscription.pull_metadata()
-        except KeyError, e:
-            caught = True
-
-        self.assertTrue(caught, "Didn't catch expected exception with bad blog name.")
+        """
+        Given a bad tumblr name, show that the correct exception is raised.
+        """
+        my_subscription = TumblrSubscription(recipient=self.recipient,
+                                             short_name='zmxmdmcnnjjncn')
+        self.assertRaises(TumblrNotFound, my_subscription.pull_metadata)
 
 
     def test_num_items_stored(self):
@@ -214,18 +212,46 @@ class TumblrSubscriptionTest(SubscriptionTestCase):
         self.assertEqual(obj.first_borked_call_time, None)
         self.assertFalse(obj.appears_broken)
 
-        success = False
-        for url, status in res.redirect_chain:
-            if reverse('subscription_detail_tumblr', kwargs={'pk':obj.pk}) in url:
-                if status >= 301 and status <= 302:
-                    # this redirect chain is a bit weird and might change, so be flexible..
-                    # we got redirected to the detail url for what we just created, so yay
-                    success = True
-        self.assertTrue(success)
-
         self.assertTrue('default_avatar_64.png' in res.rendered_content)
         self.assertTrue('Demo' in res.rendered_content)
         self.assertTrue(self.user.username in res.rendered_content)
+
+    def test_create_tumblr_via_ui_long_names(self):
+        """
+        The tumblr subscription form should take several kinds of urls in 
+        addition to the tumblog short name.
+        """
+        self.client.login(**self.userdata)
+
+        test_names = ['demo.tumblr.com', 'http://demo.tumblr.com', 'https://demo.tumblr.com']
+        for name in test_names:
+            TumblrSubscription.objects.all().delete() #clean house
+            
+            self.client.post(self.url_subscription_create_tumblr,
+                {'recipient':self.recipient.pk,
+                 'short_name':name,
+                 'enabled':True},
+                follow=True)
+            
+            obj = TumblrSubscription.objects.get(short_name='demo')
+            self.assertEqual(obj.recipient, self.recipient)
+
+    def test_create_bad_tumblr_via_ui_error(self):
+        """
+        Try to create a bad tumblr and assert that the error ends up on the resulting page.
+        """
+        self.client.login(**self.userdata)
+        name = 'bubebowkdhoet'
+        res = self.client.post(self.url_subscription_create_tumblr,
+            {'recipient':self.recipient.pk,
+             'short_name':name,
+             'enabled':True},
+            follow=True)
+        form = res.context[0]['form']
+        self.assertTrue('short_name' in form.errors)
+        short_name_errors = ' '.join(form.errors['short_name']) #cheap way to mangle all errors into one string.
+        self.assertTrue('not found' in short_name_errors) #@todo: i18n?  How do we cope with this if tests are run with a different default lang?
+
 
     def test_delete_subscription(self):
         subscription = TumblrSubscription(short_name='demo', recipient=self.recipient)
