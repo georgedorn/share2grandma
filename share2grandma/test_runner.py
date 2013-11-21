@@ -9,6 +9,12 @@ class AppTestSuiteRunner(DjangoTestSuiteRunner):
     
     See http://www.mavenrd.com/blog/django-testing-unchained/
     """
+    def setup_databases(self, **kwargs):
+        database = settings.DATABASES['default']
+        print "Running tests against database: ", database['ENGINE']
+        
+        return super(AppTestSuiteRunner, self).setup_databases(**kwargs)
+    
     def build_suite(self, test_labels, *args, **kwargs):
         if test_labels:
             return super(AppTestSuiteRunner, self).build_suite(test_labels, *args, **kwargs)
