@@ -91,11 +91,11 @@ You can add more service connections by <a href="{% url "auth_login" %}">{% tran
                     </ul>
                 </li>
                 <li>{% blocktrans with email=recipient.email %}
-                    Receives email at {{ email }}
+                    Receives messages at {{ email }}
                 {% endblocktrans %}</li>
-                <li>{% blocktrans with postcode=recipient.postcode %}
-                    For weather delivery, postcode listed at {{ postcode }}
-                {% endblocktrans %}</li>
+<!--                <li>{% blocktrans with postcode=recipient.postcode %}
+                    Receives Daily Wakeup weather forecast for this postal code: {{ postcode }}
+                {% endblocktrans %}</li> -->
                 <li>{% trans "Subscriptions:" %}
                     <ul>
                     {% if recipient.subscriptions %}

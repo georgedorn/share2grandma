@@ -20,6 +20,22 @@ class RecipientForm(forms.ModelForm):
     """
     Form for creating new Recipients or editing existing ones.
     """
+    sender_name = forms.CharField(max_length=40,
+                                  label=_('Your name'),
+                                  help_text=_('You can customize how this Recipient sees your name.'))
+
+    sender_phone = forms.CharField(max_length=20,
+                                   label=_('Your phone'),
+                                   help_text=_('Your Recipient will see this phone number at the top of each message.'))
+
+    name = forms.CharField(max_length=40,
+                           label=_('Recipient\'s Name'),
+                           help_text=_('This is how your Recipient will be displayed on the web site.'))
+
+    email = forms.CharField(max_length=50,
+                            label=_('Recipient\'s Presto Email Address'),
+                            help_text=_('The email address for your recipient, @presto.com.'))
+
 
     class Meta:
         model = Recipient
