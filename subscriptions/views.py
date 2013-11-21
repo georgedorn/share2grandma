@@ -14,16 +14,6 @@ from django.views.generic.edit import ModelFormMixin, UpdateView
 from django.core.exceptions import PermissionDenied
 
 
-# http://stackoverflow.com/questions/5773724/how-do-i-use-createview-with-a-modelform
-class TumblrSubscriptionCreateView(LoginRequiredMixin, CreateView):
-    model = TumblrSubscription
-    form_class = TumblrSubscriptionForm
-    
-    def get_form_kwargs(self):
-        kwargs = super(TumblrSubscriptionCreateView, self).get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
 class RecipientMixin(ModelFormMixin):
     form_class = RecipientForm
     model = Recipient
@@ -55,17 +45,25 @@ class RecipientDetailView(LoginRequiredMixin, RecipientMixin, DetailView):
 
 class TumblrSubscriptionMixin(ModelFormMixin):
     model = TumblrSubscription
-    
+    form_class = TumblrSubscriptionForm
+
     def get_object(self, queryset=None):
         obj = super(TumblrSubscriptionMixin, self).get_object(queryset)
         if obj is not None and obj.recipient.sender != self.request.user:
             raise PermissionDenied
         return obj
 
+    def get_form_kwargs(self):
+        kwargs = super(TumblrSubscriptionMixin, self).get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+# http://stackoverflow.com/questions/5773724/how-do-i-use-createview-with-a-modelform
+class TumblrSubscriptionCreateView(LoginRequiredMixin, TumblrSubscriptionMixin, CreateView):
+    pass
 
 class TumblrSubscriptionDetailView(LoginRequiredMixin, TumblrSubscriptionMixin, DetailView):
     pass
-
 
 class TumblrSubscriptionDeleteView(LoginRequiredMixin, TumblrSubscriptionMixin, DeleteView):
     success_url = reverse_lazy('dashboard_main')
