@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+    <p>{% blocktrans with name=object.name%}Are you sure you want to delete {{ name }}?{% endblocktrans %}</p>
+    <!-- @todo hardcoded url -->
+    <form action="" method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Delete" />
+    </form>
+    <a href="{{ object.get_absolute_url }}">{% trans "Cancel" noop %}</a>
+{% endblock %}

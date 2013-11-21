@@ -10,6 +10,8 @@ from braces.views import LoginRequiredMixin
 
 from .models import TumblrSubscription, GenericSubscription, Recipient, Vacation
 from .forms import TumblrSubscriptionForm, RecipientForm, VacationForm
+from django.views.generic.edit import ModelFormMixin, UpdateView
+from django.core.exceptions import PermissionDenied
 
 
 # http://stackoverflow.com/questions/5773724/how-do-i-use-createview-with-a-modelform
@@ -22,30 +24,51 @@ class TumblrSubscriptionCreateView(LoginRequiredMixin, CreateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-
-class RecipientCreateView(LoginRequiredMixin, CreateView):
-    model = Recipient
+class RecipientMixin(ModelFormMixin):
     form_class = RecipientForm
-    
+    model = Recipient
+
     def form_valid(self, form):
         form.instance.sender = self.request.user
-        return super(RecipientCreateView, self).form_valid(form)
-
-
-class RecipientDetailView(LoginRequiredMixin, DetailView):
-    model = Recipient
+        return super(RecipientMixin, self).form_valid(form)
 
     def get_object(self, queryset=None):
-        obj = get_object_or_404(Recipient, pk=self.kwargs.get('pk'), sender=self.request.user)
-        return DetailView.get_object(self, queryset=queryset)
+        obj = super(RecipientMixin, self).get_object(queryset)
+        
+        if obj is not None and obj.sender != self.request.user:
+            raise PermissionDenied
 
+        return obj
+    
 
-class SubscriptionDetailView(LoginRequiredMixin, DetailView):
+class RecipientCreateView(LoginRequiredMixin, RecipientMixin, CreateView):
+    pass
+
+class RecipientUpdateView(LoginRequiredMixin, RecipientMixin, UpdateView):
+    pass
+
+class RecipientDeleteView(LoginRequiredMixin, RecipientMixin, DeleteView):
+    success_url = reverse_lazy('dashboard_main')
+    
+class RecipientDetailView(LoginRequiredMixin, RecipientMixin, DetailView):
+    pass
+
+class TumblrSubscriptionMixin(ModelFormMixin):
     model = TumblrSubscription
-
+    
     def get_object(self, queryset=None):
-        obj = get_object_or_404(TumblrSubscription, pk=self.kwargs.get('pk'), recipient__in=Recipient.objects.filter(sender=self.request.user))
-        return DetailView.get_object(self, queryset=queryset)
+        obj = super(TumblrSubscriptionMixin, self).get_object(queryset)
+        if obj is not None and obj.recipient.sender != self.request.user:
+            raise PermissionDenied
+        return obj
+
+
+class TumblrSubscriptionDetailView(LoginRequiredMixin, TumblrSubscriptionMixin, DetailView):
+    pass
+
+
+class TumblrSubscriptionDeleteView(LoginRequiredMixin, TumblrSubscriptionMixin, DeleteView):
+    success_url = reverse_lazy('dashboard_main')
 
 
 class GenericSubscriptionListView(LoginRequiredMixin, ListView):
@@ -54,13 +77,6 @@ class GenericSubscriptionListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return GenericSubscription.objects.filter(recipient__in=Recipient.objects.filter(sender=self.request.user))
 
-class SubscriptionDeleteView(LoginRequiredMixin, DeleteView):
-    model = TumblrSubscription
-    success_url = reverse_lazy('subscription_list')
-
-    def get_object(self, queryset=None):
-        obj = get_object_or_404(TumblrSubscription, pk=self.kwargs.get('pk'), recipient__in=Recipient.objects.filter(sender=self.request.user))
-        return DeleteView.get_object(self, queryset=queryset)
 
 class VacationCreateView(LoginRequiredMixin, CreateView):
     model = Vacation
@@ -78,7 +94,9 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
         if not hasattr(self, '_recipient'):
             recipient_id = self.kwargs['recipient_id']
             user = self.request.user
-            self._recipient = get_object_or_404(Recipient, pk=recipient_id, sender=user)
+            self._recipient = Recipient.objects.get(pk=recipient_id)
+            if self._recipient.sender != user:
+                raise PermissionDenied
         return self._recipient
     
     def get_form_kwargs(self):
@@ -88,7 +106,6 @@ class VacationCreateView(LoginRequiredMixin, CreateView):
         kwargs = super(VacationCreateView, self).get_form_kwargs()
         kwargs['recipient'] = self.get_recipient()
         return kwargs
-
     
     def form_valid(self, form):
         """

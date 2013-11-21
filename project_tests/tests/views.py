@@ -85,5 +85,6 @@ class ViewsTests(TestCase):
         
         for url in self.ownership_required_urls:
             res = self.client.get(url)
-            self.assertEqual(res.status_code, 404, 
-                             "URL %s should return a 404 when interacting with somebody else's object.  But it returned a %s" % (url, res.status_code))
+            
+            self.assertTrue(res.status_code in (403, 404), 
+                             "URL %s should return a 403 or 404 when interacting with somebody else's object.  But it returned a %s" % (url, res.status_code))
