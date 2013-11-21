@@ -6,8 +6,6 @@
     <a href="{% url "recipient_update" pk=object.pk %}">{% trans "Edit" %}</a>
     <a href="{% url "recipient_delete" pk=object.pk %}">{% trans "Delete" %}</a>
     <dl>
-        <dt class="top"><br>{% trans "Sender" noop %}</dt>
-        <dd>{{ object.user }}</dd>
         <dt>{% trans "Sender Name" noop %}</dt>
         <dd>{{ object.sender_name }}</dd>
         <dt>{% trans "Sender Phone" noop %}</dt>

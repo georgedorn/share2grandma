@@ -2,7 +2,10 @@
 {% load i18n %}
 
 {% block content %}
-{% trans "enter a recipient here" noop %}
+{% blocktrans %}
+    <p><strong>Edit details for a Recipient here.</strong> A Recipient is someone who receives messages from you
+    via Share2Grandma.</p>
+{% endblocktrans %}
 
 <form action="" method="post">{% csrf_token %}
 {{ form.as_p }}
