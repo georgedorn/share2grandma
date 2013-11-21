@@ -112,6 +112,9 @@ class Recipient(models.Model):
 
     postcode = models.CharField(null=True, blank=True, max_length=16)
 
+    def __unicode__(self):
+        return self.name
+    
     @property
     def tz_name(self):
         return self.timezone.zone
@@ -353,6 +356,11 @@ class Recipient(models.Model):
         return local_dailywakeup_dt
 
 
+class TumblrError(Exception):
+    pass
+
+class TumblrNotFound(TumblrError):
+    pass
 
 class TumblrSubscription(GenericSubscription):
     last_post_ts = models.BigIntegerField(null=True, blank=True)
@@ -368,9 +376,9 @@ class TumblrSubscription(GenericSubscription):
         if 'meta' in blog_info_raw.keys():
             e_msg = "Status %s - %s" % (blog_info_raw['meta']['status'], blog_info_raw['meta']['msg'])
             if int(blog_info_raw['meta']['status']) == 404:
-                raise KeyError(e_msg)
+                raise TumblrNotFound(e_msg)
             else:
-                raise ValueError(e_msg)
+                raise TumblrError(e_msg)
             
         client.tumblr_info = blog_info_raw['blog']
         return client
@@ -459,7 +467,7 @@ class TumblrSubscription(GenericSubscription):
 
     def __unicode__(self):
         # so it's intelligible in the django admin
-        return "%s (Tumblr) sub for %s" % (self.short_name, self.user)
+        return "%s (Tumblr) sub for %s, c/o %s" % (self.short_name, self.recipient, self.recipient.sender)
 
 admin.site.register(TumblrSubscription)
 

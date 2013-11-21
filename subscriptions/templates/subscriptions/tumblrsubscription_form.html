@@ -5,7 +5,7 @@
 {% trans "enter a tumblr subscription here" noop %}
 
     <!-- @todo hardcoded url -->
-<form action="/subscriptions/create/tumblr/" method="post">{% csrf_token %}
+<form action="" method="post">{% csrf_token %}
 {{ form.as_p }}
 <input type="submit" value="Submit" />
 </form>

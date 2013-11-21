@@ -1,20 +1,58 @@
 from django import forms
 from django.utils.translation import ugettext as _
 from django.contrib.admin.widgets import AdminDateWidget
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-
 from .models import TumblrSubscription, Vacation, Recipient
+from subscriptions.models import TumblrNotFound
+from django.core.exceptions import ValidationError
 
 class TumblrSubscriptionForm(forms.ModelForm):
+    short_name = forms.CharField(max_length=200, label=_('Tumblr Name or URL'))
+    
     class Meta:
         model = TumblrSubscription
-        fields = ('recipient', 'enabled', 'short_name')     # whitelist
+        fields = ('recipient', 'short_name')     # whitelist
 
     def __init__(self, user, *args, **kwargs):
         super(TumblrSubscriptionForm, self).__init__(*args, **kwargs)
-        self.fields['recipient'].queryset = Recipient.objects.filter(sender=user)
+        valid_recipients = Recipient.objects.filter(sender=user)
+        self.fields['recipient'].queryset = valid_recipients
+        self.fields['recipient'].initial = valid_recipients[0]
+        self.fields['recipient'].empty_label = None
 
+    def clean_short_name(self):
+        """
+        Users might specify a tumblr in several ways, so try munging
+        them down to the tumblog name.
+        
+        Also make sure the tumblog exists; this makes a call out to tumblr.
+        
+        """
+        name = self.cleaned_data['short_name']
+        name = name.replace('.tumblr.com', '')
+        name = name.replace('https://',  '')
+        name = name.replace('http://', '')
+
+        
+        self.tmp_subscription = TumblrSubscription(short_name=name)
+        try:
+            self.tmp_subscription.pull_metadata(save=False)
+        except TumblrNotFound:
+            raise ValidationError("Tumblr %s not found" % self.cleaned_data['short_name'])
+        
+        return name
+    
+    def save(self, *args, **kwargs):
+        """
+        We already pulled metadata for the blog from tumblr during validation.
+        
+        To avoid a second call during the model's save, copy the results into the instance.
+        """
+        self.instance.avatar = self.tmp_subscription.avatar
+        self.instance.pretty_name = self.tmp_subscription.pretty_name
+        self.instance.last_post_ts = self.tmp_subscription.last_post_ts
+
+        return super(TumblrSubscriptionForm, self).save(*args, **kwargs)
+    
 
 class RecipientForm(forms.ModelForm):
     """
