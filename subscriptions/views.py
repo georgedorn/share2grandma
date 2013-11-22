@@ -157,14 +157,14 @@ class VacationDeleteView(LoginRequiredMixin, DeleteView):
 
         #get_object takes a queryset, so we're going to pre-filter it to ensure the
         #recipient belongs to the logged-in user
-        vacation = self.get_vacation(request)
+        self.object = self.get_vacation(request)
                 
-        if vacation.start_date < now:
+        if self.object.start_date < now:
             #This vacation has started, so we end it by moving the end date.
-            vacation.end_date = now
-            vacation.save()
+            self.object.end_date = now
+            self.object.save()
         else:
             #this vacation hasn't started, so we can just delete it.
-            vacation.delete()
+            self.object.delete()
 
         return HttpResponseRedirect(self.get_success_url())
