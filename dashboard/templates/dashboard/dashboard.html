@@ -20,16 +20,24 @@
             <a href="{% url 'registration_register' %}">{% trans "Click here" context "to do x" %}</a> {% trans "to create a username and password on Share2Grandma." context "do x to ..." %}
         </p>
     {% endif %}
-    
-     <p>{% blocktrans with myemail=user.originating_email %}
-         Email to your recipients is dispatched from {{ myemail }}[TODO].  <strong>You must add this address to
-        your recipients' whitelists</strong> or your messages won't go through!
-     {% endblocktrans %}</p>
+
+    <p>
+    {%  if myemail %}
+        {% blocktrans with myemail=user.s2g_email %}
+            Email to your recipients is dispatched from {{ myemail }}.  <strong>You must add this address to
+            your recipients' whitelists on Presto℠</strong> or your messages won't go through!
+        {% endblocktrans %}
+    {% else %}
+        {% blocktrans %}
+            You don't have an outgoing email address.  That's weird.
+        {% endblocktrans %}
+    {% endif %}
+    </p>
 
 {% if user.social_auth.all %}
     <h2>{% trans "Your service connections" %}</h2>
     <p>{% blocktrans %}You've connected these sites to your Share2Grandma account.  You may be able to log in, subscribe to feeds, or
-    both, from these services.{% endblocktrans %}</p>
+        both, from these services.{% endblocktrans %}</p>
     <ul>
     {% for auth in user.social_auth.all %}
         {% blocktrans with service=auth.provider uid=auth.uid %}

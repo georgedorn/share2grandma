@@ -3,30 +3,63 @@
 <head>
 <title>{% block pagetitle %}share2grandma - {% trans "put title variable here @todo" noop %}{%endblock%}</title>
 <style type="text/css">
-    dt { font-weight: bold; display: block; }
-    dd { display: inline; margin-right: 2em; }
-    .top dt { margin-top: 1em; }
+    body { background: lightgrey; padding: 0px; margin: 0px; }
+
+    ul.navlist li { font-weight: bold; display: inline; }
+    ul { display: block; margin-right: 2em; }
+    .top li { margin-top: 1em; }
+
+    #body_base {
+        width: 960px; max-width: 960px; height: 100%;
+        overflow: hidden;
+        background: white;
+        border-left: 1px solid lightslategrey; border-right: 1px solid lightslategrey;
+        padding: 1em; margin: 0px auto; }
+    #content_base {  }
+    #header { text-align: center; margin-bottom: 2.5em; }
+    #footer { text-align: center; margin-top: 3.5em; }
+    .nav_loginout { margin-right: -600px; }
 </style>
 {% block scripts %}{% endblock %}
-<script type="text/javascript" src="//code.jquery.com/jquery-1.10.2.min.js"></script>
-<script type="text/javascript" src="//code.jquery.com/ui/1.10.3/jquery-ui.min.js"></script>
-<link rel="stylesheet" href="//code.jquery.com/ui/1.10.3/themes/humanity/jquery-ui.min.css">
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/humanity/jquery-ui.min.css">
 </head>
 <body>
+<div id="body_base">
 {% block header %}
 <div id='header'>
-{% if user.is_authenticated %}{% trans "Hello" noop %} {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">{% trans "Logout" noop %}</a>
-{% else %}<a href="{% url "auth_login" %}">{% trans "Login" noop %}</a>
-{% endif %}
-<dl>
-    <dt><a href="{% url "dashboard_main" %}">{% trans "Dashboard" %}</a></dt>
-    <dt><a href='{% url 'auth_services_list' %}'>{% trans "Auth Services" %}</a>
-    <dt><a href="{% url "recipient_create" %}">{% trans "Add a Recipient" %}</a></dt>
-    <dt><a href="{% url "subscription_create_tumblr" %}">{% trans "Add Subscription" %}</a></dt>
-    <dt><a href="{% url "subscription_list" %}">{% trans "Subscription List" %}</a></dt>
-</dl>
+    <div class='nav_loginout'>{% if user.is_authenticated %}{% trans "Hello" %} {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">{% trans "Logout" %}</a>
+    {% else %}<a href="{% url "auth_login" %}">{% trans "Login" %}</a>
+    {% endif %}</div>
+
+    <ul class="navlist">
+        <li><a href="{% url "dashboard_main" %}">{% trans "Dashboard" %}</a></li>
+        <li><a href='{% url 'auth_services_list' %}'>{% trans "Auth Services" %}</a>
+        <li><a href="{% url "recipient_create" %}">{% trans "Add a Recipient" %}</a></li>
+        <li><a href="{% url "subscription_create_tumblr" %}">{% trans "Add Subscription" %}</a></li>
+        <li><a href="{% url "subscription_list" %}">{% trans "Subscription List" %}</a></li>
+    </ul>
 </div>
 {% endblock %}
+<div id="content_base">
 {% block content %}{% endblock %}
+</div>
+<div id="footer">
+    <ul class="navlist">
+        <li><a href="{% url "dashboard_main" %}">{% trans "Dashboard" %}</a></li>
+        <li><a href='{% url 'auth_services_list' %}'>{% trans "Auth Services" %}</a>
+        <li><a href="{% url "recipient_create" %}">{% trans "Add a Recipient" %}</a></li>
+        <li><a href="{% url "subscription_create_tumblr" %}">{% trans "Add Subscription" %}</a></li>
+        <li><a href="{% url "subscription_list" %}">{% trans "Subscription List" %}</a></li>
+    </ul>
+
+    <div class='nav_loginout'>{% if user.is_authenticated %}{% trans "Hello" %} {{user.username}}.  <a href="{% url "django.contrib.auth.views.logout" %}">{% trans "Logout" %}</a>
+    {% else %}<a href="{% url "auth_login" %}">{% trans "Login" %}</a>
+    {% endif %}</div>
+    <small><p>&copy; Copyright Smart Cat Media 2013. All rights reserved.</p></small>
+</div>
+</div>
+
 </body>
 </html>
