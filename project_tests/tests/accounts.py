@@ -12,8 +12,9 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 from social_auth.backends import get_backends
 from registration.models import RegistrationProfile
-from django.utils.http import int_to_base36
+from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.forms import SetPasswordForm
+from django.utils.encoding import force_bytes
 
 User = get_user_model()
 
@@ -116,15 +117,15 @@ class RegistrationTestCase(TestCase):
         self.assertTrue(user.username in email.body)
         confirm_url = self._get_confirm_url(user)
         
-        self.assertTrue(confirm_url in email.body)
+        self.assertTrue(confirm_url in email.body, "Expected %s in email body: %s" % (confirm_url, email.body))
 
     def _get_confirm_url(self, user):
         token_maker = PasswordResetTokenGenerator()
         token = token_maker.make_token(user)
-        uid = int_to_base36(user.pk) #dunno, something auth does
+        uid = urlsafe_base64_encode(force_bytes(user.pk)) #same thing django does to generate uid
         confirm_url = reverse('auth_password_reset_confirm', 
                               kwargs={'token':token,
-                                      'uidb36':uid})
+                                      'uidb64':uid})
         return confirm_url
 
     def test_reset_password(self):
